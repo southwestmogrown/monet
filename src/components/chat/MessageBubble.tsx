@@ -1,0 +1,173 @@
+"use client";
+
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import { CodeBlock } from "@/components/ui/CodeBlock";
+import type { Message } from "@/types/chat";
+
+interface MessageBubbleProps {
+  message: Message;
+  isStreaming?: boolean;
+}
+
+export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
+  const isUser = message.role === "user";
+
+  if (isUser) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginBottom: 12,
+          paddingLeft: 48,
+        }}
+      >
+        <div
+          style={{
+            background: "var(--user-bubble)",
+            color: "var(--text-primary)",
+            borderRadius: "12px 12px 2px 12px",
+            padding: "8px 14px",
+            maxWidth: "80%",
+            fontSize: 13,
+            lineHeight: 1.6,
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+          }}
+        >
+          {message.content}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "flex-start",
+        marginBottom: 16,
+        paddingRight: 48,
+      }}
+    >
+      {/* Claude avatar */}
+      <div
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: "50%",
+          background: "var(--accent)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          marginRight: 10,
+          marginTop: 2,
+          fontSize: 11,
+          fontWeight: 700,
+          color: "#fff",
+          fontFamily: "monospace",
+        }}
+      >
+        C
+      </div>
+
+      <div
+        style={{
+          flex: 1,
+          fontSize: 13,
+          lineHeight: 1.7,
+          color: "var(--text-primary)",
+        }}
+        className="markdown-body"
+      >
+        {message.content ? (
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeHighlight]}
+            components={{
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              code({ node: _node, className, children, ...props }: any) {
+                const match = /language-(\w+)/.exec(className || "");
+                const codeStr = String(children).replace(/\n$/, "");
+                const isBlock = codeStr.includes("\n") || match;
+
+                if (isBlock) {
+                  return (
+                    <CodeBlock
+                      code={codeStr}
+                      language={match ? match[1] : undefined}
+                      className={className}
+                    />
+                  );
+                }
+                return (
+                  <code
+                    {...props}
+                    style={{
+                      background: "#2d2d2d",
+                      borderRadius: 3,
+                      padding: "1px 5px",
+                      fontSize: "0.9em",
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    {children}
+                  </code>
+                );
+              },
+              p({ children }) {
+                return (
+                  <p style={{ margin: "0 0 8px 0" }}>{children}</p>
+                );
+              },
+              ul({ children }) {
+                return (
+                  <ul style={{ margin: "4px 0 8px 0", paddingLeft: 20 }}>
+                    {children}
+                  </ul>
+                );
+              },
+              ol({ children }) {
+                return (
+                  <ol style={{ margin: "4px 0 8px 0", paddingLeft: 20 }}>
+                    {children}
+                  </ol>
+                );
+              },
+              blockquote({ children }) {
+                return (
+                  <blockquote
+                    style={{
+                      borderLeft: "3px solid var(--accent)",
+                      paddingLeft: 12,
+                      margin: "8px 0",
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    {children}
+                  </blockquote>
+                );
+              },
+            }}
+          >
+            {message.content}
+          </ReactMarkdown>
+        ) : isStreaming ? (
+          <span
+            style={{
+              display: "inline-block",
+              width: 8,
+              height: 14,
+              background: "var(--accent)",
+              animation: "blink 1s step-end infinite",
+              verticalAlign: "text-bottom",
+            }}
+          />
+        ) : null}
+      </div>
+    </div>
+  );
+}
