@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicClient } from "@/lib/anthropic";
 import { createTextStream, createNdjsonStream } from "@/lib/streaming";
 
@@ -57,8 +58,7 @@ export async function POST(req: NextRequest) {
     thinking && model === "claude-haiku-4-5-20251001" ? "claude-sonnet-4-6" : model;
 
   // Build Anthropic message format (handles image attachments)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const anthropicMessages: any[] = messages.map((m) => ({
+  const anthropicMessages: Anthropic.MessageParam[] = messages.map((m) => ({
     role: m.role,
     content: buildMessageContent(m),
   }));
@@ -69,16 +69,14 @@ export async function POST(req: NextRequest) {
       const stream = client.messages.stream({
         model: effectiveModel,
         max_tokens: 16000,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        thinking: { type: "enabled", budget_tokens: 8000 } as any,
+        thinking: { type: "enabled", budget_tokens: 8000 } satisfies Anthropic.ThinkingConfigParam,
         system: system ?? "You are Claude, a helpful AI assistant.",
         messages: anthropicMessages,
       });
 
       for await (const event of stream) {
         if (event.type === "content_block_delta") {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const delta = event.delta as any;
+          const delta = event.delta;
           if (delta.type === "thinking_delta") {
             emit({ t: "k", d: delta.thinking ?? "" });
           } else if (delta.type === "text_delta") {
