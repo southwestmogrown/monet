@@ -1,10 +1,77 @@
 "use client";
 
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
+import { Brain, ChevronDown, ChevronUp } from "lucide-react";
 import { CodeBlock } from "@/components/ui/CodeBlock";
 import type { Message } from "@/types/chat";
+
+function ThinkingBlock({ thinking }: { thinking: string }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div
+      style={{
+        background: "rgba(0,0,0,0.2)",
+        border: "1px solid var(--border)",
+        borderRadius: 6,
+        marginBottom: 10,
+        overflow: "hidden",
+      }}
+    >
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          width: "100%",
+          padding: "6px 10px",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: "var(--text-secondary)",
+          fontFamily: "monospace",
+          fontSize: 11,
+        }}
+      >
+        <Brain size={13} />
+        <span style={{ flex: 1, textAlign: "left" }}>Reasoning</span>
+        {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+      </button>
+      <div
+        style={{
+          maxHeight: expanded ? 300 : 0,
+          overflow: "hidden",
+          transition: "max-height 200ms ease",
+        }}
+      >
+        <div
+          style={{
+            overflowY: "auto",
+            maxHeight: 300,
+            padding: "6px 10px 10px",
+          }}
+        >
+          <pre
+            style={{
+              fontFamily: "monospace",
+              fontSize: 11,
+              color: "var(--text-secondary)",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              margin: 0,
+            }}
+          >
+            {thinking}
+          </pre>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface MessageBubbleProps {
   message: Message;
@@ -83,6 +150,9 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
         }}
         className="markdown-body"
       >
+        {message.thinking ? (
+          <ThinkingBlock thinking={message.thinking} />
+        ) : null}
         {message.content ? (
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
