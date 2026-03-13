@@ -9,18 +9,16 @@ import type { AgentToolName } from "@/types/agent";
 export function SettingsPanel() {
   const store = useSettingsStore();
   const [keySaved, setKeySaved] = useState(false);
-  const [keyDraft, setKeyDraft] = useState("");
+  // undefined = user hasn't typed yet; falls back to store value after rehydration
+  const [keyDraft, setKeyDraft] = useState<string | undefined>(undefined);
+  const displayKey = keyDraft ?? store.anthropicKeyOverride ?? "";
 
   useEffect(() => {
     useSettingsStore.persist.rehydrate();
   }, []);
 
-  useEffect(() => {
-    setKeyDraft(store.anthropicKeyOverride);
-  }, [store.anthropicKeyOverride]);
-
   const saveKey = () => {
-    store.setAnthropicKeyOverride(keyDraft.trim());
+    store.setAnthropicKeyOverride(displayKey.trim());
     setKeySaved(true);
     setTimeout(() => setKeySaved(false), 2000);
   };
@@ -61,12 +59,12 @@ export function SettingsPanel() {
         <SectionHeader icon={<Key size={14} />} title="API Key" />
         <p style={{ color: "var(--text-secondary)", marginBottom: 12, lineHeight: 1.6 }}>
           Optional in-browser override. When set, this key is sent directly to the API routes
-          instead of the server's environment variable.
+          instead of the server&apos;s environment variable.
         </p>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input
             type="password"
-            value={keyDraft}
+            value={displayKey}
             onChange={(e) => setKeyDraft(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && saveKey()}
             placeholder="sk-ant-…"

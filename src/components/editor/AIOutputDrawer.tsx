@@ -106,8 +106,7 @@ export function AIOutputDrawer({ result, onApply, onClose }: AIOutputDrawerProps
         {result.action === "explain" ? (
           <ReactMarkdown
             components={{
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              code({ className, children }: any) {
+              code({ className, children }: React.ComponentPropsWithoutRef<"code">) {
                 const match = /language-(\w+)/.exec(className || "");
                 return (
                   <CodeBlock

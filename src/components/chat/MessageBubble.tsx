@@ -88,8 +88,7 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
             remarkPlugins={[remarkGfm]}
             rehypePlugins={[rehypeHighlight]}
             components={{
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              code({ node: _node, className, children, ...props }: any) {
+              code({ className, children, ...props }: React.ComponentPropsWithoutRef<"code">) {
                 const match = /language-(\w+)/.exec(className || "");
                 const codeStr = String(children).replace(/\n$/, "");
                 const isBlock = codeStr.includes("\n") || match;
