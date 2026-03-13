@@ -28,7 +28,8 @@ export async function POST(req: NextRequest) {
   const filledSystem = fillTemplate(systemPrompt, variables);
   const filledUser = fillTemplate(userMessage, variables);
 
-  const client = getAnthropicClient();
+  const customKey = req.headers.get("X-Anthropic-Key") ?? undefined;
+  const client = getAnthropicClient(customKey);
 
   const message = await client.messages.create({
     model,
