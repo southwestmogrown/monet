@@ -16,6 +16,7 @@ const RequestSchema = z.object({
   goal: z.string().min(1),
   context: z.string().optional(),
   enabledTools: z.array(z.string()).optional(),
+  model: z.string().optional().default("claude-sonnet-4-6"),
 });
 
 export async function POST(req: NextRequest) {
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
 
-  const { goal, context, enabledTools } = parsed.data;
+  const { goal, context, enabledTools, model } = parsed.data;
   const customKey = req.headers.get("X-Anthropic-Key") ?? undefined;
   const client = getAnthropicClient(customKey);
   resetVirtualFS();
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
       iterations++;
 
       const response = await client.messages.create({
-        model: "claude-sonnet-4-6",
+        model: model,
         max_tokens: 4096,
         system:
           "You are an autonomous AI agent. Use the tools available to you to complete the user's goal. Be thorough but efficient. When you have completed the goal, provide a clear final summary.",

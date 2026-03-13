@@ -21,6 +21,12 @@ export function useChat() {
   useEffect(() => {
     useChatStore.persist.rehydrate();
     useSettingsStore.persist.rehydrate();
+    // Seed activeModel from settings default if still at the hardcoded fallback
+    const { activeModel, setActiveModel } = useChatStore.getState();
+    const { defaultModels } = useSettingsStore.getState();
+    if (activeModel === "claude-sonnet-4-6") {
+      setActiveModel(defaultModels.chat);
+    }
   }, []);
 
   const { stream, isStreaming, cancel: cancelBaseStream } = useStreamingResponse({

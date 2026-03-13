@@ -12,6 +12,12 @@ export function useAgentRun() {
 
   useEffect(() => {
     useSettingsStore.persist.rehydrate();
+    // Seed activeModel from settings default if still at the hardcoded fallback
+    const { activeModel, setActiveModel } = useAgentStore.getState();
+    const { defaultModels } = useSettingsStore.getState();
+    if (activeModel === "claude-sonnet-4-6") {
+      setActiveModel(defaultModels.agent);
+    }
   }, []);
 
   const runAgent = useCallback(
@@ -27,6 +33,7 @@ export function useAgentRun() {
       const { anthropicKeyOverride, agentToolDefaults } =
         useSettingsStore.getState();
       const effectiveTools = enabledTools ?? agentToolDefaults;
+      const { activeModel } = useAgentStore.getState();
       const extraHeaders: Record<string, string> = {};
       if (anthropicKeyOverride) {
         extraHeaders["X-Anthropic-Key"] = anthropicKeyOverride;
@@ -39,7 +46,7 @@ export function useAgentRun() {
         const res = await fetch("/api/agent/run", {
           method: "POST",
           headers: { "Content-Type": "application/json", ...extraHeaders },
-          body: JSON.stringify({ goal, context, enabledTools: effectiveTools }),
+          body: JSON.stringify({ goal, context, enabledTools: effectiveTools, model: activeModel }),
           signal: controller.signal,
         });
 
