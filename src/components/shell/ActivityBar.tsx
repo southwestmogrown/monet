@@ -15,6 +15,7 @@ function NavLink({ href, icon: Icon, label }: { href: string; icon: React.Elemen
   const pathname = usePathname();
   const isActive = pathname === href || pathname.startsWith(href + "/");
   return (
+    <div className="nav-tooltip" data-tooltip={label}>
     <Link
       href={href}
       title={label}
@@ -46,6 +47,7 @@ function NavLink({ href, icon: Icon, label }: { href: string; icon: React.Elemen
     >
       <Icon size={20} />
     </Link>
+    </div>
   );
 }
 
