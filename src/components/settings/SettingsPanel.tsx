@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Key, Cpu, Wrench } from "lucide-react";
+import { Check, Key, Cpu, Wrench, Brain } from "lucide-react";
 import { useSettingsStore, ALL_AGENT_TOOLS, AGENT_TOOL_DESCRIPTIONS } from "@/stores/settings-store";
 import { MODELS, type ModelId } from "@/types/chat";
 import type { AgentToolName } from "@/types/agent";
@@ -195,6 +195,40 @@ export function SettingsPanel() {
               </select>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Extended Thinking */}
+      <section style={{ marginBottom: 36 }}>
+        <SectionHeader icon={<Brain size={14} />} title="Extended Thinking" />
+        <p style={{ color: "var(--text-secondary)", marginBottom: 16, lineHeight: 1.6 }}>
+          Token budget for Claude&apos;s internal reasoning when thinking mode is enabled in Chat.
+          Higher values allow deeper reasoning but consume more tokens.
+        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <input
+            type="number"
+            min={1024}
+            max={32000}
+            step={1024}
+            value={store.thinkingBudget}
+            onChange={(e) => {
+              const val = Math.min(32000, Math.max(1024, Number(e.target.value)));
+              store.setThinkingBudget(val);
+            }}
+            style={{
+              width: 120,
+              background: "var(--bg-input)",
+              border: "1px solid var(--border)",
+              borderRadius: 6,
+              color: "var(--text-primary)",
+              fontSize: 13,
+              padding: "7px 12px",
+              outline: "none",
+              fontFamily: "monospace",
+            }}
+          />
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>tokens (1024 – 32000)</span>
         </div>
       </section>
 

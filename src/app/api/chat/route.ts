@@ -15,6 +15,7 @@ const RequestSchema = z.object({
   model: z.string().default("claude-sonnet-4-6"),
   system: z.string().optional(),
   thinking: z.boolean().optional(),
+  thinkingBudget: z.number().int().min(1024).max(32000).default(8000),
 });
 
 function buildMessageContent(
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
 
-  const { messages, model, system, thinking } = parsed.data;
+  const { messages, model, system, thinking, thinkingBudget } = parsed.data;
   const customKey = req.headers.get("X-Anthropic-Key") ?? undefined;
   const client = getAnthropicClient(customKey);
 
@@ -68,8 +69,8 @@ export async function POST(req: NextRequest) {
     const ndjsonStream = createNdjsonStream(async (emit) => {
       const stream = client.messages.stream({
         model: effectiveModel,
-        max_tokens: 16000,
-        thinking: { type: "enabled", budget_tokens: 8000 } satisfies Anthropic.ThinkingConfigParam,
+        max_tokens: Math.max(thinkingBudget + 1000, 16000),
+        thinking: { type: "enabled", budget_tokens: thinkingBudget } satisfies Anthropic.ThinkingConfigParam,
         system: system ?? "You are Claude, a helpful AI assistant.",
         messages: anthropicMessages,
       });
