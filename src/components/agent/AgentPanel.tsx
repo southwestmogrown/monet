@@ -20,7 +20,7 @@ export function AgentPanel() {
       }}
     >
       <AgentTaskInput
-        onRun={runAgent}
+        onRun={(goal, enabledTools) => runAgent(goal, undefined, enabledTools)}
         onCancel={cancelAgent}
         onClear={clearRun}
         isRunning={isRunning}
