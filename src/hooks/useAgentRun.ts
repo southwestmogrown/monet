@@ -11,7 +11,26 @@ export function useAgentRun() {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    useAgentStore.persist.rehydrate();
     useSettingsStore.persist.rehydrate();
+
+    // Fix any runs that were interrupted by a page reload (still marked as "running")
+    const { pastRuns } = useAgentStore.getState();
+    const hasInterrupted = pastRuns.some((r) => r.status === "running");
+    if (hasInterrupted) {
+      useAgentStore.setState({
+        pastRuns: pastRuns.map((r) =>
+          r.status === "running"
+            ? {
+                ...r,
+                status: "error",
+                finalMessage: "Run was interrupted (page reloaded).",
+              }
+            : r
+        ),
+      });
+    }
+
     // Seed activeModel from settings default if still at the hardcoded fallback
     const { activeModel, setActiveModel } = useAgentStore.getState();
     const { defaultModels } = useSettingsStore.getState();
