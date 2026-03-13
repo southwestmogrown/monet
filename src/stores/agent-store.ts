@@ -1,10 +1,12 @@
 import { create } from "zustand";
 import { nanoid } from "nanoid";
 import type { AgentRun, AgentStep, AgentToolName } from "@/types/agent";
+import type { ModelId } from "@/types/chat";
 
 interface AgentState {
   currentRun: AgentRun | null;
   pastRuns: AgentRun[];
+  activeModel: ModelId;
 
   // Actions
   startRun: (goal: string) => string;
@@ -13,11 +15,13 @@ interface AgentState {
   finishRun: (runId: string, finalMessage: string) => void;
   failRun: (runId: string, error: string) => void;
   clearCurrentRun: () => void;
+  setActiveModel: (model: ModelId) => void;
 }
 
 export const useAgentStore = create<AgentState>()((set, get) => ({
   currentRun: null,
   pastRuns: [],
+  activeModel: "claude-sonnet-4-6",
 
   startRun: (goal) => {
     const id = nanoid();
@@ -109,4 +113,6 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
         : get().pastRuns,
     });
   },
+
+  setActiveModel: (model) => set({ activeModel: model }),
 }));
