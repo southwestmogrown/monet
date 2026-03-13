@@ -13,80 +13,82 @@ A toggle (lightbulb icon) in `ChatInput enables` Claude's `thinking` content blo
 ## API change (`src/app/api/chat/route.ts`)
 
 - Accept optional thinking: boolean in request body (Zod schema)
-- When thinking === true, pass thinking: { type: "enabled", budget_tokens: 10000 } to anthropic.messages.stream()
-- Requires model claude-sonnet-4-6 or Opus (Haiku doesn't support thinking) — auto-upgrade model if user tries Haiku + thinking
-- Stream events: thinking content blocks arrive as content_block_start with type: "thinking" — parse and emit them separately in the stream so the client can distinguish thinking from text
+- When `thinking === true`, pass `thinking: { type: "enabled", budget_tokens: 10000 }` to `anthropic.messages.stream()`
+- Requires model `claude-sonnet-4-6` or `Opus` (`Haiku` doesn't support thinking) — auto-upgrade model if user tries `Haiku + thinking`
+- Stream events: thinking content blocks arrive as `content_block_start` with `type: "thinking"` — parse and emit them separately in the stream so the client can distinguish thinking from text
 
 ## Store change (`src/stores/chat-store.ts`)
 
-- Add thinkingEnabled: boolean field (default false)
-- Add setThinkingEnabled(v: boolean) action
-- Each Message gets an optional thinking?: string field to persist the thinking text
+- Add `thinkingEnabled: boolean field (default false)`
+- Add `setThinkingEnabled(v: boolean) action`
+- Each Message gets an optional `thinking?: string` field to persist the thinking text
 
 Component changes
 
-src/components/chat/ChatInput.tsx: Add a lightbulb toggle button next to the model selector; reads/writes thinkingEnabled from store
-src/components/chat/MessageBubble.tsx: When message.thinking is present, render a <ThinkingBlock> above the main content — a collapsible panel with Brain icon, muted background, monospace text, collapsed by default
-src/lib/streaming.ts: Update createTextStream to emit thinking blocks as a separate SSE prefix (e.g. prefix line __THINKING__: before thinking text)
-src/hooks/useChat.ts: Parse thinking prefix from stream, store in message's thinking field
+- `src/components/chat/ChatInput.tsx`: Add a lightbulb toggle button next to the model selector; reads/writes `thinkingEnabled` from store
+- `src/components/chat/MessageBubble.tsx`: When `message.thinking` is present, render a `<ThinkingBlock>` above the main content — a collapsible panel with `Brain` icon, muted background, monospace text, collapsed by default
+- `src/lib/streaming.ts`: Update `createTextStream` to emit thinking blocks as a separate SSE prefix (e.g. `prefix line __THINKING__`: before thinking text)
+- `src/hooks/useChat.ts`: Parse thinking prefix from stream, store in message's thinking field
 
-Files to modify
+## Files to modify
 
-src/app/api/chat/route.ts
-src/stores/chat-store.ts
-src/components/chat/ChatInput.tsx
-src/components/chat/MessageBubble.tsx
-src/hooks/useChat.ts
-src/lib/streaming.ts
+- `src/app/api/chat/route.ts`
+- `src/stores/chat-store.ts`
+- `src/components/chat/ChatInput.tsx`
+- `src/components/chat/MessageBubble.tsx`
+- `src/hooks/useChat.ts`
+- `src/lib/streaming.ts`
 
 
-Feature 2: Vision — Image Upload in Chat
+## Feature 2: Vision — Image Upload in Chat
 What it does
 Users can attach images to a chat message by clicking a paperclip icon or pasting from clipboard. The image appears as a thumbnail in the input area; on send, it's included as an image content block alongside the user's text. Claude's response references what it sees.
-API change (src/app/api/chat/route.ts)
 
-Update Zod schema: messages array items can now include an optional image?: { data: string; mediaType: string } field
-When present, rewrite the user's message content from a plain string to an array: [{ type: "image", source: { type: "base64", ... } }, { type: "text", text: userText }]
+## API change (`src/app/api/chat/route.ts`)
 
-Store change (src/stores/chat-store.ts)
+Update Zod schema: messages array items can now include an optional `image?: { data: string; mediaType: string }` field
+When present, rewrite the user's message content from a plain string to an array: `[{ type: "image", source: { type: "base64", ... } }, { type: "text", text: userText }]`
 
-Message gets an optional imageUrl?: string field (data URL, stored for display in conversation history)
+## Store change (`src/stores/chat-store.ts`)
 
-Component changes
+Message gets an optional `imageUrl?`: string field (data URL, stored for display in conversation history)
 
-src/components/chat/ChatInput.tsx:
+## Component changes
 
-Add imageAttachment: { dataUrl: string; mediaType: string } | null local state
-Paperclip button opens <input type="file" accept="image/*">
-onPaste handler checks for image items in ClipboardEvent.clipboardData.items
+`src/components/chat/ChatInput.tsx`:
+
+Add `imageAttachment`: `{ dataUrl: string; mediaType: string } | null` local state
+Paperclip button opens `<input type="file" accept="image/*">`
+`onPaste` handler checks for image items in `ClipboardEvent.clipboardData.items`
 Thumbnail preview with ✕ dismiss button above the textarea
 On send: include image data in the fetch body
 
 
-src/components/chat/MessageBubble.tsx:
+`src/components/chat/MessageBubble.tsx`:
 
-When message.imageUrl is present (user bubble), render <img> thumbnail above the text
-
-
-
-Files to modify
-
-src/app/api/chat/route.ts
-src/stores/chat-store.ts
-src/types/chat.ts
-src/components/chat/ChatInput.tsx
-src/components/chat/MessageBubble.tsx
+When `message.imageUrl` is present (user bubble), render `<img>` thumbnail above the text
 
 
-Feature 3: Settings Panel (Permissions + Defaults)
+
+## Files to modify
+
+`src/app/api/chat/route.ts`
+`src/stores/chat-store.ts`
+`src/types/chat.ts`
+`src/components/chat/ChatInput.tsx`
+`src/components/chat/MessageBubble.tsx`
+
+
+## Feature 3: Settings Panel (Permissions + Defaults)
 What it does
-The gear icon already exists in ActivityBar.tsx but links nowhere. This adds a proper /settings page with three sections:
+The gear icon already exists in `ActivityBar.tsx` but links nowhere. This adds a proper /settings page with three sections:
 
-API Key — Optional in-browser override. Stored in a new settings-store (localStorage). API routes check for a custom key passed via an X-Anthropic-Key header and use it instead of process.env.ANTHROPIC_API_KEY when present. Makes the app distributable without server env config.
+API Key — Optional in-browser override. Stored in a new settings-store (`localStorage`). API routes check for a custom key passed via an `X-Anthropic-Key` header and use it instead of `process.env.ANTHROPIC_API_KEY` when present. Makes the app distributable without server `env` config.
 Default Models — Per-feature model selectors (Chat, Agent, Workbench). Stored in settings store; each feature reads its default on mount if no conversation-specific model is set.
-Agent Tool Permissions — Checkboxes for each of the 5 tools (web_search, read_file, write_file, create_artifact, analyze_code). Settings stored as enabledTools: string[]. The AgentTaskInput reads these as defaults (user can still override per-run).
+Agent Tool Permissions — Checkboxes for each of the 5 tools (`web_search`, `read_file`, `write_file`, `create_artifact`, `analyze_code`). Settings stored as enabledTools: `string[]`. The `AgentTaskInput` reads these as defaults (user can still override per-run).
 
-New store (src/stores/settings-store.ts)
+## New store (`src/stores/settings-store.ts`)
+```javascript
 typescriptinterface SettingsState {
   anthropicKeyOverride: string;          // empty = use server env
   defaultModels: { chat: ModelId; agent: ModelId; workbench: ModelId };
@@ -95,46 +97,47 @@ typescriptinterface SettingsState {
   setDefaultModel(feature: string, model: ModelId): void;
   setAgentToolDefaults(tools: AgentToolName[]): void;
 }
-Persisted to localStorage with key "monet-settings".
-New route (src/app/(ide)/settings/page.tsx)
-Simple page that renders <SettingsPanel />.
-New component (src/components/settings/SettingsPanel.tsx)
+```
+Persisted to `localStorage` with key "monet-settings".
+New route (`src/app/(ide)/settings/page.tsx`)
+Simple page that renders `<SettingsPanel />`.
+New component (`src/components/settings/SettingsPanel.tsx`)
 Three sections rendered as labeled card blocks:
 
 API Key: password input + "Save" button + green "✓ Active" / grey "Using server key" badge
-Default Models: three <ModelSelector> dropdowns
+Default Models: three `<ModelSelector>` dropdowns
 Agent Tools: checkbox list with descriptions for each tool
 
-Existing file changes
+## Existing file changes
 
-src/components/shell/ActivityBar.tsx: Update gear icon href from # to /settings; add /settings to the active-route detection
-src/app/api/chat/route.ts and src/app/api/agent/run/route.ts: Check request.headers.get('X-Anthropic-Key'), use it to construct a per-request Anthropic client if present
-src/components/agent/AgentTaskInput.tsx: Read agentToolDefaults from settings store as initial checkbox state
+- `src/components/shell/ActivityBar.tsx`: Update gear icon href from # to /settings; add /settings to the active-route detection
+- `src/app/api/chat/route.ts and src/app/api/agent/run/route.ts`: Check request.headers.get('X-Anthropic-Key'), use it to construct a per-request Anthropic client if present
+- `src/components/agent/AgentTaskInput.tsx`: Read agentToolDefaults from settings store as initial checkbox state
 
-Files to create
+## Files to create
 
-src/stores/settings-store.ts
-src/app/(ide)/settings/page.tsx
-src/components/settings/SettingsPanel.tsx
+- `src/stores/settings-store.ts`
+- `src/app/(ide)/settings/page.tsx`
+- `src/components/settings/SettingsPanel.tsx`
 
-Files to modify
+## Files to modify
 
-src/components/shell/ActivityBar.tsx
-src/app/api/chat/route.ts
-src/app/api/agent/run/route.ts
-src/components/agent/AgentTaskInput.tsx
+- `src/components/shell/ActivityBar.tsx`
+- `src/app/api/chat/route.ts`
+- `src/app/api/agent/run/route.ts`
+- `src/components/agent/AgentTaskInput.tsx`
 
 
-Implementation Order
+## Implementation Order
 
-Settings Panel first — it's self-contained, adds no risk to existing features, and gives us the store pattern for defaults that the other features read
-Extended Thinking second — modifies the chat flow but is gated behind a toggle, zero impact when off
-Vision/Image Upload third — touches the most UI state but is similarly gated (no image = identical behavior to today)
+- Settings Panel first — it's self-contained, adds no risk to existing features, and gives us the store pattern for defaults that the other features read
+- Extended Thinking second — modifies the chat flow but is gated behind a toggle, zero impact when off
+- Vision/Image Upload third — touches the most UI state but is similarly gated (no image = identical behavior to today)
 
 
 Verification
 
-Settings: Navigate to /settings, enter an API key, check DevTools → Network headers on the next /api/chat call for X-Anthropic-Key. Change a default model, open Chat, confirm the model selector shows the new default.
-Extended Thinking: Toggle the lightbulb on, send a complex reasoning question ("what is 17 × 23 step by step"), verify a collapsible "Reasoning" block appears above the answer. Toggle off and confirm it disappears.
-Vision: Paste a screenshot into the chat input, confirm thumbnail appears, send, verify Claude's reply references the image content.
-Regression: All four existing features (Chat without thinking, Editor AI, Agent, Workbench) behave identically when the new toggles are off.
+- Settings: Navigate to `/settings`, enter an API key, check DevTools → Network headers on the next `/api/chat` call for `X-Anthropic-Key`. Change a default model, open Chat, confirm the model selector shows the new default.
+- Extended Thinking: Toggle the lightbulb on, send a complex reasoning question ("what is 17 × 23 step by step"), verify a collapsible "Reasoning" block appears above the answer. Toggle off and confirm it disappears.
+- Vision: Paste a screenshot into the chat input, confirm thumbnail appears, send, verify Claude's reply references the image content.
+- Regression: All four existing features (Chat without thinking, Editor AI, Agent, Workbench) behave identically when the new toggles are off.
