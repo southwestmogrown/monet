@@ -18,6 +18,7 @@ export function ChatPanel() {
     sendMessage,
     cancelStream,
     getActiveConversation,
+    imageError,
   } = useChat();
 
   const activeConversation = getActiveConversation();
@@ -52,6 +53,7 @@ export function ChatPanel() {
           isStreaming={isStreaming}
           model={activeModel}
           onModelChange={setActiveModel}
+          sendError={imageError}
         />
       </div>
     </div>

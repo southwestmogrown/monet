@@ -5,6 +5,7 @@ import type { MutableRefObject } from "react";
 import { useChatStore } from "@/stores/chat-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useStreamingResponse } from "./useStreamingResponse";
+import { compressImage } from "@/lib/compress-image";
 
 export interface ImageAttachment {
   dataUrl: string;
@@ -16,6 +17,9 @@ export function useChat() {
   const activeConversationIdRef = useRef<string | null>(null);
   const [isThinkingStreaming, setIsThinkingStreaming] = useState(false);
   const thinkingAbortRef = useRef<AbortController | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+
+  const clearImageError = useCallback(() => setImageError(null), []);
 
   // Rehydrate stores on mount (prevents SSR mismatch)
   useEffect(() => {
@@ -50,6 +54,20 @@ export function useChat() {
     async (content: string, imageAttachment?: ImageAttachment) => {
       if (!content.trim() || isStreaming || isThinkingStreaming) return;
 
+      setImageError(null);
+
+      // Compress image before storing or sending
+      let attachment = imageAttachment;
+      if (attachment) {
+        try {
+          const compressedDataUrl = await compressImage(attachment.dataUrl);
+          attachment = { ...attachment, dataUrl: compressedDataUrl, mediaType: "image/jpeg" };
+        } catch (err) {
+          setImageError((err as Error).message);
+          return;
+        }
+      }
+
       const conversationId = ensureConversation();
       activeConversationIdRef.current = conversationId;
 
@@ -60,7 +78,7 @@ export function useChat() {
       addMessage(conversationId, {
         role: "user",
         content,
-        imageUrl: imageAttachment?.dataUrl,
+        imageUrl: attachment?.dataUrl,
       });
 
       // Add empty assistant placeholder
@@ -76,8 +94,8 @@ export function useChat() {
       // Build messages for API — only the last user message gets the image
       const messages = conversation.messages.slice(0, -1).map((m, i, arr) => {
         const isLast = i === arr.length - 1;
-        if (isLast && m.role === "user" && imageAttachment) {
-          return { role: m.role, content: m.content, imageDataUrl: imageAttachment.dataUrl };
+        if (isLast && m.role === "user" && attachment) {
+          return { role: m.role, content: m.content, imageDataUrl: attachment.dataUrl };
         }
         return { role: m.role, content: m.content };
       });
@@ -115,6 +133,8 @@ export function useChat() {
     isStreaming: isStreaming || isThinkingStreaming,
     sendMessage,
     cancelStream: cancel,
+    imageError,
+    clearImageError,
   };
 }
 
