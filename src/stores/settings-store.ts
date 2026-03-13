@@ -23,10 +23,12 @@ interface SettingsState {
   anthropicKeyOverride: string;
   defaultModels: { chat: ModelId; agent: ModelId; workbench: ModelId };
   agentToolDefaults: AgentToolName[];
+  thinkingBudget: number;
 
   setAnthropicKeyOverride: (key: string) => void;
   setDefaultModel: (feature: "chat" | "agent" | "workbench", model: ModelId) => void;
   setAgentToolDefaults: (tools: AgentToolName[]) => void;
+  setThinkingBudget: (budget: number) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -39,6 +41,7 @@ export const useSettingsStore = create<SettingsState>()(
         workbench: "claude-sonnet-4-6",
       },
       agentToolDefaults: [...ALL_AGENT_TOOLS],
+      thinkingBudget: 8000,
 
       setAnthropicKeyOverride: (key) => set({ anthropicKeyOverride: key }),
 
@@ -48,6 +51,8 @@ export const useSettingsStore = create<SettingsState>()(
         })),
 
       setAgentToolDefaults: (tools) => set({ agentToolDefaults: tools }),
+
+      setThinkingBudget: (budget) => set({ thinkingBudget: budget }),
     }),
     { name: "monet-settings", skipHydration: true }
   )

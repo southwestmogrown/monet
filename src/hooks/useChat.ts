@@ -54,7 +54,7 @@ export function useChat() {
       activeConversationIdRef.current = conversationId;
 
       const { addMessage, activeModel, thinkingEnabled } = useChatStore.getState();
-      const { anthropicKeyOverride } = useSettingsStore.getState();
+      const { anthropicKeyOverride, thinkingBudget } = useSettingsStore.getState();
 
       // Add user message
       addMessage(conversationId, {
@@ -93,6 +93,7 @@ export function useChat() {
           messages,
           model: activeModel,
           extraHeaders,
+          thinkingBudget,
           setIsStreaming: setIsThinkingStreaming,
           abortRef: thinkingAbortRef,
         });
@@ -122,10 +123,11 @@ async function streamWithThinking(opts: {
   messages: { role: string; content: string; imageDataUrl?: string }[];
   model: string;
   extraHeaders: Record<string, string>;
+  thinkingBudget: number;
   setIsStreaming: (v: boolean) => void;
   abortRef: MutableRefObject<AbortController | null>;
 }) {
-  const { conversationId, messages, model, extraHeaders, setIsStreaming, abortRef } = opts;
+  const { conversationId, messages, model, extraHeaders, thinkingBudget, setIsStreaming, abortRef } = opts;
 
   abortRef.current?.abort();
   const controller = new AbortController();
@@ -139,7 +141,7 @@ async function streamWithThinking(opts: {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...extraHeaders },
-      body: JSON.stringify({ messages, model, thinking: true }),
+      body: JSON.stringify({ messages, model, thinking: true, thinkingBudget }),
       signal: controller.signal,
     });
 
