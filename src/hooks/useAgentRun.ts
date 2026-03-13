@@ -1,16 +1,21 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { nanoid } from "nanoid";
 import { useAgentStore } from "@/stores/agent-store";
+import { useSettingsStore } from "@/stores/settings-store";
 import type { AgentStreamEvent, AgentToolName } from "@/types/agent";
 
 export function useAgentRun() {
   const store = useAgentStore();
   const abortRef = useRef<AbortController | null>(null);
 
+  useEffect(() => {
+    useSettingsStore.persist.rehydrate();
+  }, []);
+
   const runAgent = useCallback(
-    async (goal: string, context?: string) => {
+    async (goal: string, context?: string, enabledTools?: string[]) => {
       if (store.currentRun?.status === "running") return;
 
       abortRef.current?.abort();
@@ -19,14 +24,22 @@ export function useAgentRun() {
 
       const runId = store.startRun(goal);
 
+      const { anthropicKeyOverride, agentToolDefaults } =
+        useSettingsStore.getState();
+      const effectiveTools = enabledTools ?? agentToolDefaults;
+      const extraHeaders: Record<string, string> = {};
+      if (anthropicKeyOverride) {
+        extraHeaders["X-Anthropic-Key"] = anthropicKeyOverride;
+      }
+
       // Map from API step IDs (tool_use block IDs) to store step IDs
       const stepIdMap = new Map<string, string>();
 
       try {
         const res = await fetch("/api/agent/run", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ goal, context }),
+          headers: { "Content-Type": "application/json", ...extraHeaders },
+          body: JSON.stringify({ goal, context, enabledTools: effectiveTools }),
           signal: controller.signal,
         });
 
