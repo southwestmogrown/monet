@@ -13,6 +13,7 @@ interface ChatInputProps {
   isStreaming: boolean;
   model: ModelId;
   onModelChange: (model: ModelId) => void;
+  sendError?: string | null;
 }
 
 export function ChatInput({
@@ -21,6 +22,7 @@ export function ChatInput({
   isStreaming,
   model,
   onModelChange,
+  sendError,
 }: ChatInputProps) {
   const [value, setValue] = useState("");
   const [imageAttachment, setImageAttachment] = useState<ImageAttachment | null>(null);
@@ -356,6 +358,19 @@ export function ChatInput({
           }}
         >
           Image too large (max 4 MB)
+        </p>
+      )}
+
+      {/* Compression error */}
+      {sendError && (
+        <p
+          style={{
+            margin: "4px 0 0",
+            fontSize: 11,
+            color: "#e74c3c",
+          }}
+        >
+          {sendError}
         </p>
       )}
     </div>
