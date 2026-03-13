@@ -25,6 +25,15 @@ export function SettingsPanel() {
     setTimeout(() => setKeySaved(false), 2000);
   };
 
+  const clearKey = () => {
+    store.setAnthropicKeyOverride("");
+    setKeyDraft("");
+  };
+
+  const maskedKey = store.anthropicKeyOverride
+    ? "••••••••••••" + store.anthropicKeyOverride.slice(-4)
+    : null;
+
   const toggleTool = (tool: AgentToolName) => {
     const current = store.agentToolDefaults;
     if (current.includes(tool)) {
@@ -103,8 +112,31 @@ export function SettingsPanel() {
             {keySaved ? <Check size={12} /> : null}
             {keySaved ? "Saved" : "Save"}
           </button>
+          <button
+            onClick={clearKey}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              padding: "7px 14px",
+              background: "none",
+              border: "1px solid var(--border)",
+              borderRadius: 6,
+              color: "var(--text-primary)",
+              fontSize: 12,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+              fontFamily: "inherit",
+            }}
+          >
+            Clear key
+          </button>
         </div>
-        <div style={{ marginTop: 8, fontSize: 11, color: "var(--text-muted)" }}>
+        {maskedKey && (
+          <div style={{ marginTop: 8, fontSize: 11, fontFamily: "monospace", color: "var(--text-secondary)" }}>
+            Active key: {maskedKey}
+          </div>
+        )}
+        <div style={{ marginTop: maskedKey ? 4 : 8, fontSize: 11, color: "var(--text-muted)" }}>
           {store.anthropicKeyOverride
             ? "✓ Custom key active — using your in-browser key"
             : "Using server environment variable (ANTHROPIC_API_KEY)"}
