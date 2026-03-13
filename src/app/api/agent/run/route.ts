@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicClient } from "@/lib/anthropic";
 import {
   AGENT_TOOLS,
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
     : AGENT_TOOLS;
 
   const stream = createNdjsonStream(async (emit) => {
-    const messages: { role: "user" | "assistant"; content: unknown }[] = [
+    const messages: Anthropic.MessageParam[] = [
       {
         role: "user",
         content: context ? `Context: ${context}\n\nGoal: ${goal}` : goal,
@@ -59,19 +60,17 @@ export async function POST(req: NextRequest) {
           "You are an autonomous AI agent. Use the tools available to you to complete the user's goal. Be thorough but efficient. When you have completed the goal, provide a clear final summary.",
         tools: activeTools.length > 0 ? activeTools : AGENT_TOOLS,
         tool_choice: { type: "auto" },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        messages: messages as any,
+        messages: messages,
       });
 
       // Append assistant message
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      messages.push({ role: "assistant", content: response.content as any });
+      messages.push({ role: "assistant", content: response.content });
 
       if (response.stop_reason === "end_turn") {
         // Extract final text
         const finalText = response.content
-          .filter((b) => b.type === "text")
-          .map((b) => (b as { type: "text"; text: string }).text)
+          .filter((b): b is Anthropic.TextBlock => b.type === "text")
+          .map((b) => b.text)
           .join("\n");
 
         emit({ type: "final", message: finalText });
