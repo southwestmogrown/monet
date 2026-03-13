@@ -104,6 +104,20 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
             wordBreak: "break-word",
           }}
         >
+          {message.imageUrl && (
+            <img
+              src={message.imageUrl}
+              alt="attached image"
+              style={{
+                maxWidth: 280,
+                maxHeight: 200,
+                objectFit: "contain",
+                borderRadius: 6,
+                display: "block",
+                marginBottom: 6,
+              }}
+            />
+          )}
           {message.content}
         </div>
       </div>
