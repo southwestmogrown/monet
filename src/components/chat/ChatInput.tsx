@@ -1,13 +1,14 @@
 "use client";
 
-import { useRef, useState, useEffect, KeyboardEvent } from "react";
-import { Send, Square, Lightbulb } from "lucide-react";
+import { useRef, useState, useEffect, KeyboardEvent, ClipboardEvent } from "react";
+import { Send, Square, Lightbulb, Paperclip, X } from "lucide-react";
 import { MODELS, type ModelId } from "@/types/chat";
 import { Spinner } from "@/components/ui/Spinner";
 import { useChatStore } from "@/stores/chat-store";
+import type { ImageAttachment } from "@/hooks/useChat";
 
 interface ChatInputProps {
-  onSend: (content: string) => void;
+  onSend: (content: string, image?: ImageAttachment) => void;
   onCancel: () => void;
   isStreaming: boolean;
   model: ModelId;
@@ -22,7 +23,10 @@ export function ChatInput({
   onModelChange,
 }: ChatInputProps) {
   const [value, setValue] = useState("");
+  const [imageAttachment, setImageAttachment] = useState<ImageAttachment | null>(null);
+  const [sizeError, setSizeError] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const thinkingEnabled = useChatStore((s) => s.thinkingEnabled);
   const setThinkingEnabled = useChatStore((s) => s.setThinkingEnabled);
   const isHaiku = model === "claude-haiku-4-5-20251001";
@@ -47,10 +51,52 @@ export function ChatInput({
     }
   };
 
+  const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4 MB
+
+  const readFileAsAttachment = (file: File) => {
+    if (file.size > MAX_FILE_SIZE) {
+      setSizeError(true);
+      return;
+    }
+    setSizeError(false);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setImageAttachment({
+        dataUrl: ev.target?.result as string,
+        mediaType: file.type,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) readFileAsAttachment(file);
+    // Reset input so the same file can be re-selected if cleared
+    e.target.value = "";
+  };
+
+  const handlePaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith("image/")) {
+        const file = items[i].getAsFile();
+        if (file) {
+          e.preventDefault();
+          readFileAsAttachment(file);
+          return;
+        }
+      }
+    }
+  };
+
   const handleSend = () => {
     if (!value.trim() || isStreaming) return;
-    onSend(value.trim());
+    onSend(value.trim(), imageAttachment ?? undefined);
     setValue("");
+    setImageAttachment(null);
+    setSizeError(false);
   };
 
   return (
@@ -61,6 +107,55 @@ export function ChatInput({
         background: "var(--bg-sidebar)",
       }}
     >
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
+
+      {/* Thumbnail preview */}
+      {imageAttachment && (
+        <div style={{ position: "relative", display: "inline-block", marginBottom: 8 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageAttachment.dataUrl}
+            alt="Attached image preview"
+            style={{
+              width: 56,
+              height: 56,
+              objectFit: "cover",
+              borderRadius: 6,
+              border: "1px solid var(--border)",
+              display: "block",
+            }}
+          />
+          <button
+            onClick={() => setImageAttachment(null)}
+            title="Remove attachment"
+            style={{
+              position: "absolute",
+              top: -6,
+              right: -6,
+              width: 18,
+              height: 18,
+              borderRadius: "50%",
+              background: "var(--bg-active)",
+              border: "1px solid var(--border)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0,
+            }}
+          >
+            <X size={10} color="var(--text-primary)" />
+          </button>
+        </div>
+      )}
+
       {/* Textarea row */}
       <div
         style={{
@@ -73,11 +168,32 @@ export function ChatInput({
           padding: "8px 12px",
         }}
       >
+        {/* Paperclip button */}
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          title="Attach image"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 28,
+            height: 28,
+            borderRadius: 5,
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          <Paperclip size={15} color="var(--text-muted)" />
+        </button>
+
         <textarea
           ref={textareaRef}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           placeholder="Message Claude… (Enter to send, Shift+Enter for newline)"
           rows={1}
           style={{
@@ -229,6 +345,19 @@ export function ChatInput({
           </div>
         )}
       </div>
+
+      {/* Size error */}
+      {sizeError && (
+        <p
+          style={{
+            margin: "4px 0 0",
+            fontSize: 11,
+            color: "#e74c3c",
+          }}
+        >
+          Image too large (max 4 MB)
+        </p>
+      )}
     </div>
   );
 }
