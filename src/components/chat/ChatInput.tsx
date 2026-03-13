@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef, useState, useEffect, KeyboardEvent } from "react";
-import { Send, Square } from "lucide-react";
+import { Send, Square, Lightbulb } from "lucide-react";
 import { MODELS, type ModelId } from "@/types/chat";
 import { Spinner } from "@/components/ui/Spinner";
+import { useChatStore } from "@/stores/chat-store";
 
 interface ChatInputProps {
   onSend: (content: string) => void;
@@ -22,6 +23,9 @@ export function ChatInput({
 }: ChatInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const thinkingEnabled = useChatStore((s) => s.thinkingEnabled);
+  const setThinkingEnabled = useChatStore((s) => s.setThinkingEnabled);
+  const isHaiku = model === "claude-haiku-4-5-20251001";
 
   // Auto-resize textarea
   useEffect(() => {
@@ -134,7 +138,7 @@ export function ChatInput({
         )}
       </div>
 
-      {/* Bottom toolbar: model selector + streaming indicator */}
+      {/* Bottom toolbar: thinking toggle + model selector + streaming indicator */}
       <div
         style={{
           display: "flex",
@@ -143,26 +147,72 @@ export function ChatInput({
           marginTop: 8,
         }}
       >
-        <select
-          value={model}
-          onChange={(e) => onModelChange(e.target.value as ModelId)}
-          style={{
-            background: "transparent",
-            border: "1px solid var(--border)",
-            borderRadius: 4,
-            color: "var(--text-secondary)",
-            fontSize: 11,
-            padding: "2px 6px",
-            cursor: "pointer",
-            outline: "none",
-          }}
-        >
-          {MODELS.map((m) => (
-            <option key={m.id} value={m.id} style={{ background: "#333" }}>
-              {m.label}
-            </option>
-          ))}
-        </select>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {/* Extended thinking toggle */}
+          <button
+            onClick={() => setThinkingEnabled(!thinkingEnabled)}
+            title={
+              thinkingEnabled
+                ? "Thinking ON — Claude will show its reasoning"
+                : "Enable extended thinking"
+            }
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 26,
+              height: 26,
+              borderRadius: 5,
+              background: thinkingEnabled ? "var(--accent)" : "transparent",
+              border: "none",
+              cursor: "pointer",
+              flexShrink: 0,
+              transition: "background 0.1s",
+            }}
+          >
+            <Lightbulb
+              size={13}
+              color={thinkingEnabled ? "#fff" : "var(--text-muted)"}
+            />
+          </button>
+
+          {/* Haiku → Sonnet upgrade warning */}
+          {thinkingEnabled && isHaiku && (
+            <span
+              style={{
+                fontSize: 10,
+                color: "var(--text-muted)",
+                background: "var(--bg-active)",
+                borderRadius: 4,
+                padding: "1px 5px",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Haiku → Sonnet
+            </span>
+          )}
+
+          <select
+            value={model}
+            onChange={(e) => onModelChange(e.target.value as ModelId)}
+            style={{
+              background: "transparent",
+              border: "1px solid var(--border)",
+              borderRadius: 4,
+              color: "var(--text-secondary)",
+              fontSize: 11,
+              padding: "2px 6px",
+              cursor: "pointer",
+              outline: "none",
+            }}
+          >
+            {MODELS.map((m) => (
+              <option key={m.id} value={m.id} style={{ background: "#333" }}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {isStreaming && (
           <div
