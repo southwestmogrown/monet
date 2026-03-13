@@ -63,6 +63,23 @@ export function SettingsPanel() {
         Settings
       </h1>
 
+      {!store.anthropicKeyOverride && (
+        <div
+          style={{
+            background: "rgba(255,200,0,0.1)",
+            border: "1px solid rgba(255,200,0,0.3)",
+            borderRadius: 6,
+            padding: "10px 14px",
+            fontSize: 12,
+            color: "var(--text-secondary)",
+            marginBottom: 24,
+          }}
+        >
+          No in-browser API key set. The app will use the server&apos;s ANTHROPIC_API_KEY environment
+          variable. Set a key here if you&apos;re running without a server .env file.
+        </div>
+      )}
+
       {/* API Key */}
       <section style={{ marginBottom: 36 }}>
         <SectionHeader icon={<Key size={14} />} title="API Key" />
