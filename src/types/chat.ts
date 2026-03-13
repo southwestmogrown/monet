@@ -4,6 +4,8 @@ export interface Message {
   id: string;
   role: Role;
   content: string;
+  thinking?: string;
+  imageUrl?: string;
   createdAt: number;
 }
 

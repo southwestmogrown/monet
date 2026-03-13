@@ -7,14 +7,16 @@ interface ChatState {
   conversations: Conversation[];
   activeConversationId: string | null;
   activeModel: ModelId;
+  thinkingEnabled: boolean;
 
   // Actions
   createConversation: () => string;
   setActiveConversation: (id: string) => void;
   deleteConversation: (id: string) => void;
   addMessage: (conversationId: string, message: Omit<Message, "id" | "createdAt">) => void;
-  updateLastAssistantMessage: (conversationId: string, content: string) => void;
+  updateLastAssistantMessage: (conversationId: string, content: string, thinking?: string) => void;
   setActiveModel: (model: ModelId) => void;
+  setThinkingEnabled: (enabled: boolean) => void;
   getActiveConversation: () => Conversation | null;
 }
 
@@ -24,6 +26,7 @@ export const useChatStore = create<ChatState>()(
       conversations: [],
       activeConversationId: null,
       activeModel: "claude-sonnet-4-6",
+      thinkingEnabled: false,
 
       createConversation: () => {
         const id = nanoid();
@@ -76,14 +79,14 @@ export const useChatStore = create<ChatState>()(
         }));
       },
 
-      updateLastAssistantMessage: (conversationId, content) => {
+      updateLastAssistantMessage: (conversationId, content, thinking?) => {
         set((state) => ({
           conversations: state.conversations.map((c) => {
             if (c.id !== conversationId) return c;
             const messages = [...c.messages];
             const lastIdx = messages.length - 1;
             if (lastIdx >= 0 && messages[lastIdx].role === "assistant") {
-              messages[lastIdx] = { ...messages[lastIdx], content };
+              messages[lastIdx] = { ...messages[lastIdx], content, ...(thinking !== undefined ? { thinking } : {}) };
             }
             return { ...c, messages, updatedAt: Date.now() };
           }),
@@ -92,6 +95,10 @@ export const useChatStore = create<ChatState>()(
 
       setActiveModel: (model) => {
         set({ activeModel: model });
+      },
+
+      setThinkingEnabled: (enabled) => {
+        set({ thinkingEnabled: enabled });
       },
 
       getActiveConversation: () => {

@@ -1,0 +1,217 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Check, Key, Cpu, Wrench } from "lucide-react";
+import { useSettingsStore, ALL_AGENT_TOOLS, AGENT_TOOL_DESCRIPTIONS } from "@/stores/settings-store";
+import { MODELS, type ModelId } from "@/types/chat";
+import type { AgentToolName } from "@/types/agent";
+
+export function SettingsPanel() {
+  const store = useSettingsStore();
+  const [keySaved, setKeySaved] = useState(false);
+  const [keyDraft, setKeyDraft] = useState("");
+
+  useEffect(() => {
+    useSettingsStore.persist.rehydrate();
+  }, []);
+
+  useEffect(() => {
+    setKeyDraft(store.anthropicKeyOverride);
+  }, [store.anthropicKeyOverride]);
+
+  const saveKey = () => {
+    store.setAnthropicKeyOverride(keyDraft.trim());
+    setKeySaved(true);
+    setTimeout(() => setKeySaved(false), 2000);
+  };
+
+  const toggleTool = (tool: AgentToolName) => {
+    const current = store.agentToolDefaults;
+    if (current.includes(tool)) {
+      store.setAgentToolDefaults(current.filter((t) => t !== tool));
+    } else {
+      store.setAgentToolDefaults([...current, tool]);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        flex: 1,
+        overflowY: "auto",
+        padding: "32px 40px",
+        maxWidth: 640,
+        color: "var(--text-primary)",
+        fontSize: 13,
+      }}
+    >
+      <h1
+        style={{
+          fontSize: 18,
+          fontWeight: 600,
+          marginBottom: 32,
+          color: "var(--text-primary)",
+        }}
+      >
+        Settings
+      </h1>
+
+      {/* API Key */}
+      <section style={{ marginBottom: 36 }}>
+        <SectionHeader icon={<Key size={14} />} title="API Key" />
+        <p style={{ color: "var(--text-secondary)", marginBottom: 12, lineHeight: 1.6 }}>
+          Optional in-browser override. When set, this key is sent directly to the API routes
+          instead of the server's environment variable.
+        </p>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            type="password"
+            value={keyDraft}
+            onChange={(e) => setKeyDraft(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && saveKey()}
+            placeholder="sk-ant-…"
+            style={{
+              flex: 1,
+              background: "var(--bg-input)",
+              border: "1px solid var(--border)",
+              borderRadius: 6,
+              color: "var(--text-primary)",
+              fontSize: 13,
+              padding: "7px 12px",
+              outline: "none",
+              fontFamily: "monospace",
+            }}
+          />
+          <button
+            onClick={saveKey}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "7px 14px",
+              background: keySaved ? "#27ae60" : "var(--accent)",
+              border: "none",
+              borderRadius: 6,
+              color: "#fff",
+              fontSize: 12,
+              cursor: "pointer",
+              transition: "background 0.2s",
+              whiteSpace: "nowrap",
+              fontFamily: "inherit",
+            }}
+          >
+            {keySaved ? <Check size={12} /> : null}
+            {keySaved ? "Saved" : "Save"}
+          </button>
+        </div>
+        <div style={{ marginTop: 8, fontSize: 11, color: "var(--text-muted)" }}>
+          {store.anthropicKeyOverride
+            ? "✓ Custom key active — using your in-browser key"
+            : "Using server environment variable (ANTHROPIC_API_KEY)"}
+        </div>
+      </section>
+
+      {/* Default Models */}
+      <section style={{ marginBottom: 36 }}>
+        <SectionHeader icon={<Cpu size={14} />} title="Default Models" />
+        <p style={{ color: "var(--text-secondary)", marginBottom: 16, lineHeight: 1.6 }}>
+          Default model selected when opening each feature. Can still be changed per-session.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {(["chat", "agent", "workbench"] as const).map((feature) => (
+            <div
+              key={feature}
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
+            >
+              <span style={{ textTransform: "capitalize", color: "var(--text-secondary)" }}>
+                {feature}
+              </span>
+              <select
+                value={store.defaultModels[feature]}
+                onChange={(e) => store.setDefaultModel(feature, e.target.value as ModelId)}
+                style={{
+                  background: "var(--bg-input)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 5,
+                  color: "var(--text-primary)",
+                  fontSize: 12,
+                  padding: "4px 8px",
+                  cursor: "pointer",
+                  outline: "none",
+                }}
+              >
+                {MODELS.map((m) => (
+                  <option key={m.id} value={m.id} style={{ background: "#333" }}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Agent Tool Permissions */}
+      <section style={{ marginBottom: 36 }}>
+        <SectionHeader icon={<Wrench size={14} />} title="Agent Tool Permissions" />
+        <p style={{ color: "var(--text-secondary)", marginBottom: 16, lineHeight: 1.6 }}>
+          Choose which tools are enabled by default when running the agent. Can be overridden per-run.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {ALL_AGENT_TOOLS.map((tool) => {
+            const enabled = store.agentToolDefaults.includes(tool);
+            return (
+              <label
+                key={tool}
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 10,
+                  cursor: "pointer",
+                  padding: "8px 10px",
+                  borderRadius: 6,
+                  background: enabled ? "var(--bg-active)" : "transparent",
+                  border: `1px solid ${enabled ? "var(--accent)" : "var(--border)"}`,
+                  transition: "all 0.1s",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={enabled}
+                  onChange={() => toggleTool(tool)}
+                  style={{ marginTop: 1, accentColor: "var(--accent)", flexShrink: 0 }}
+                />
+                <div>
+                  <div style={{ fontFamily: "monospace", fontSize: 12, color: "var(--text-primary)" }}>
+                    {tool}
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                    {AGENT_TOOL_DESCRIPTIONS[tool]}
+                  </div>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 10,
+        paddingBottom: 8,
+        borderBottom: "1px solid var(--border)",
+      }}
+    >
+      <span style={{ color: "var(--accent)" }}>{icon}</span>
+      <span style={{ fontWeight: 600, fontSize: 13, color: "var(--text-primary)" }}>{title}</span>
+    </div>
+  );
+}

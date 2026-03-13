@@ -14,6 +14,7 @@ const MAX_ITERATIONS = 15;
 const RequestSchema = z.object({
   goal: z.string().min(1),
   context: z.string().optional(),
+  enabledTools: z.array(z.string()).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -29,9 +30,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
 
-  const { goal, context } = parsed.data;
-  const client = getAnthropicClient();
+  const { goal, context, enabledTools } = parsed.data;
+  const customKey = req.headers.get("X-Anthropic-Key") ?? undefined;
+  const client = getAnthropicClient(customKey);
   resetVirtualFS();
+
+  const activeTools = enabledTools
+    ? AGENT_TOOLS.filter((t) => enabledTools.includes(t.name))
+    : AGENT_TOOLS;
 
   const stream = createNdjsonStream(async (emit) => {
     const messages: { role: "user" | "assistant"; content: unknown }[] = [
@@ -51,7 +57,7 @@ export async function POST(req: NextRequest) {
         max_tokens: 4096,
         system:
           "You are an autonomous AI agent. Use the tools available to you to complete the user's goal. Be thorough but efficient. When you have completed the goal, provide a clear final summary.",
-        tools: AGENT_TOOLS,
+        tools: activeTools.length > 0 ? activeTools : AGENT_TOOLS,
         tool_choice: { type: "auto" },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         messages: messages as any,

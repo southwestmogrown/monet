@@ -15,7 +15,7 @@ export function useStreamingResponse(options: UseStreamingResponseOptions = {}) 
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const stream = useCallback(
-    async (url: string, body: unknown) => {
+    async (url: string, body: unknown, extraHeaders?: Record<string, string>) => {
       // Cancel any in-flight request
       abortControllerRef.current?.abort();
       const controller = new AbortController();
@@ -28,7 +28,7 @@ export function useStreamingResponse(options: UseStreamingResponseOptions = {}) 
       try {
         const response = await fetch(url, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...(extraHeaders ?? {}) },
           body: JSON.stringify(body),
           signal: controller.signal,
         });
