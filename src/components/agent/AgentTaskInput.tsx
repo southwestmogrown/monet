@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, KeyboardEvent } from "react";
+import { useState, useEffect, KeyboardEvent } from "react";
 import { Play, Square, Trash2 } from "lucide-react";
 import { Spinner } from "@/components/ui/Spinner";
+import { useSettingsStore, ALL_AGENT_TOOLS } from "@/stores/settings-store";
+import type { AgentToolName } from "@/types/agent";
 
 interface AgentTaskInputProps {
-  onRun: (goal: string) => void;
+  onRun: (goal: string, enabledTools: AgentToolName[]) => void;
   onCancel: () => void;
   onClear: () => void;
   isRunning: boolean;
@@ -18,6 +20,13 @@ export function AgentTaskInput({
   isRunning,
 }: AgentTaskInputProps) {
   const [goal, setGoal] = useState("");
+  const [enabledTools, setEnabledTools] = useState<AgentToolName[]>(
+    () => useSettingsStore.getState().agentToolDefaults
+  );
+
+  useEffect(() => {
+    useSettingsStore.persist.rehydrate();
+  }, []);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -28,8 +37,14 @@ export function AgentTaskInput({
 
   const handleRun = () => {
     if (!goal.trim() || isRunning) return;
-    onRun(goal.trim());
+    onRun(goal.trim(), enabledTools);
     setGoal("");
+  };
+
+  const toggleTool = (tool: AgentToolName) => {
+    setEnabledTools((prev) =>
+      prev.includes(tool) ? prev.filter((t) => t !== tool) : [...prev, tool]
+    );
   };
 
   return (
@@ -74,6 +89,30 @@ export function AgentTaskInput({
           boxSizing: "border-box",
         }}
       />
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 12,
+          marginTop: 8,
+          fontSize: 11,
+          color: "var(--text-muted)",
+        }}
+      >
+        {ALL_AGENT_TOOLS.map((tool) => (
+          <label
+            key={tool}
+            style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}
+          >
+            <input
+              type="checkbox"
+              checked={enabledTools.includes(tool)}
+              onChange={() => toggleTool(tool)}
+            />
+            {tool}
+          </label>
+        ))}
+      </div>
       <div
         style={{
           display: "flex",
