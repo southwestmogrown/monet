@@ -3,6 +3,7 @@
 import { useEffect, useCallback } from "react";
 import { nanoid } from "nanoid";
 import { useWorkbenchStore } from "@/stores/workbench-store";
+import { useSettingsStore } from "@/stores/settings-store";
 import type { CompareVariant } from "@/types/workbench";
 
 export function useWorkbench() {
@@ -11,7 +12,17 @@ export function useWorkbench() {
   // Rehydrate on mount
   useEffect(() => {
     useWorkbenchStore.persist.rehydrate();
+    useSettingsStore.persist.rehydrate();
   }, []);
+
+  function buildHeaders(): Record<string, string> {
+    const { anthropicKeyOverride } = useSettingsStore.getState();
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (anthropicKeyOverride) {
+      headers["X-Anthropic-Key"] = anthropicKeyOverride;
+    }
+    return headers;
+  }
 
   const runTemplate = useCallback(async () => {
     const template = store.getActiveTemplate();
@@ -23,7 +34,7 @@ export function useWorkbench() {
     try {
       const res = await fetch("/api/prompt-workbench/run", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildHeaders(),
         body: JSON.stringify({
           systemPrompt: template.systemPrompt,
           userMessage: template.userMessage,
@@ -69,7 +80,7 @@ export function useWorkbench() {
       try {
         const res = await fetch("/api/prompt-workbench/compare", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: buildHeaders(),
           body: JSON.stringify({
             variants,
             variables: store.variables,

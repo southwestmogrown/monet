@@ -29,7 +29,8 @@ export async function POST(req: NextRequest) {
   }
 
   const { variants, variables } = parsed.data;
-  const client = getAnthropicClient();
+  const customKey = req.headers.get("X-Anthropic-Key") ?? undefined;
+  const client = getAnthropicClient(customKey);
 
   const results = await Promise.allSettled(
     variants.map(async (variant, index) => {
