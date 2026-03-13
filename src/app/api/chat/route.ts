@@ -52,7 +52,14 @@ export async function POST(req: NextRequest) {
 
   const { messages, model, system, thinking, thinkingBudget } = parsed.data;
   const customKey = req.headers.get("X-Anthropic-Key") ?? undefined;
-  const client = getAnthropicClient(customKey);
+
+  let client: Anthropic;
+  try {
+    client = getAnthropicClient(customKey);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to initialize Anthropic client";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 
   // Thinking requires Sonnet or Opus — upgrade Haiku automatically
   const effectiveModel =
