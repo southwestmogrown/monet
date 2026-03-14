@@ -107,21 +107,37 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
 
 type ToolInput = Record<string, unknown>;
 
-interface VirtualFile {
+export interface VirtualFile {
   path: string;
   content: string;
 }
 
-// In-memory virtual filesystem scoped to a single agent run
-const virtualFS = new Map<string, string>();
+export interface VirtualFS {
+  read(path: string): string | undefined;
+  write(path: string, content: string): void;
+  list(): VirtualFile[];
+}
 
-export function resetVirtualFS() {
-  virtualFS.clear();
+/** Create an isolated in-memory virtual filesystem for a single agent run. */
+export function createVirtualFS(): VirtualFS {
+  const store = new Map<string, string>();
+  return {
+    read: (path) => store.get(path),
+    write: (path, content) => {
+      store.set(path, content);
+    },
+    list: () =>
+      Array.from(store.entries()).map(([path, content]) => ({
+        path,
+        content,
+      })),
+  };
 }
 
 export async function executeToolCall(
   toolName: AgentToolName,
-  input: ToolInput
+  input: ToolInput,
+  vfs: VirtualFS
 ): Promise<string> {
   switch (toolName) {
     case "web_search": {
@@ -158,7 +174,7 @@ export async function executeToolCall(
 
     case "read_file": {
       const path = input.path as string;
-      const content = virtualFS.get(path);
+      const content = vfs.read(path);
       if (content === undefined) {
         return `Error: File not found: ${path}`;
       }
@@ -168,7 +184,7 @@ export async function executeToolCall(
     case "write_file": {
       const path = input.path as string;
       const content = input.content as string;
-      virtualFS.set(path, content);
+      vfs.write(path, content);
       return `Successfully wrote ${content.length} characters to ${path}`;
     }
 
@@ -177,7 +193,7 @@ export async function executeToolCall(
       const content = input.content as string;
       const language = (input.language as string) ?? "plaintext";
       // Store as a virtual file under .artifacts/
-      virtualFS.set(`.artifacts/${name}`, content);
+      vfs.write(`.artifacts/${name}`, content);
       return `Artifact "${name}" (${language}) created with ${content.length} characters.`;
     }
 
@@ -194,11 +210,4 @@ export async function executeToolCall(
     default:
       return `Unknown tool: ${toolName}`;
   }
-}
-
-export function getVirtualFiles(): VirtualFile[] {
-  return Array.from(virtualFS.entries()).map(([path, content]) => ({
-    path,
-    content,
-  }));
 }
