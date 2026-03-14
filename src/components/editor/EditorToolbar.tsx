@@ -20,16 +20,16 @@ export function EditorToolbar({
   onLanguageChange,
   onAIAction,
 }: EditorToolbarProps) {
-  const btnStyle = (color?: string) => ({
+  const btnStyle = (isAccent?: boolean) => ({
     display: "flex",
-    alignItems: "center",
+    alignItems: "center" as const,
     gap: 5,
-    padding: "3px 10px",
-    background: "none",
-    border: `1px solid var(--border)`,
-    borderRadius: 4,
+    padding: "4px 10px",
+    background: isAccent ? "var(--accent-dim)" : "transparent",
+    border: `1px solid ${isAccent ? "rgba(124,106,246,0.3)" : "var(--border)"}`,
+    borderRadius: 6,
     cursor: "pointer",
-    color: color ?? "var(--text-secondary)",
+    color: isAccent ? "var(--accent)" : "var(--text-secondary)",
     fontSize: 11,
     fontFamily: "inherit",
     transition: "all 0.1s",
@@ -42,7 +42,7 @@ export function EditorToolbar({
         display: "flex",
         alignItems: "center",
         gap: 8,
-        padding: "6px 12px",
+        padding: "7px 14px",
         background: "var(--bg-sidebar)",
         borderBottom: "1px solid var(--border)",
         flexShrink: 0,
@@ -53,32 +53,32 @@ export function EditorToolbar({
         style={{
           fontSize: 12,
           color: "var(--text-secondary)",
-          fontFamily: "monospace",
+          fontFamily: "var(--font-mono), 'Cascadia Code', Consolas, monospace",
           marginRight: 4,
         }}
       >
         {fileName}
       </span>
 
-      <div style={{ width: 1, height: 16, background: "var(--border)" }} />
+      <div style={{ width: 1, height: 14, background: "var(--border)", opacity: 0.7 }} />
 
       {/* Language selector */}
       <select
         value={language}
         onChange={(e) => onLanguageChange(e.target.value as EditorLanguage)}
         style={{
-          background: "transparent",
+          background: "var(--bg-input)",
           border: "1px solid var(--border)",
-          borderRadius: 4,
+          borderRadius: 5,
           color: "var(--text-secondary)",
           fontSize: 11,
-          padding: "2px 6px",
+          padding: "2px 8px",
           cursor: "pointer",
           outline: "none",
         }}
       >
         {LANGUAGES.map((l) => (
-          <option key={l.id} value={l.id} style={{ background: "#333" }}>
+          <option key={l.id} value={l.id} style={{ background: "#0E1422" }}>
             {l.label}
           </option>
         ))}
@@ -93,7 +93,7 @@ export function EditorToolbar({
             display: "flex",
             alignItems: "center",
             gap: 6,
-            color: "var(--text-muted)",
+            color: "var(--accent)",
             fontSize: 11,
           }}
         >
@@ -106,6 +106,8 @@ export function EditorToolbar({
             style={btnStyle()}
             onClick={() => onAIAction("explain")}
             title="Explain selected code"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-primary)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)"; }}
           >
             <FileText size={12} />
             Explain
@@ -114,12 +116,14 @@ export function EditorToolbar({
             style={btnStyle()}
             onClick={() => onAIAction("refactor")}
             title="Refactor selected code"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-primary)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)"; }}
           >
             <Wand2 size={12} />
             Refactor
           </button>
           <button
-            style={btnStyle("var(--accent)")}
+            style={btnStyle(true)}
             onClick={() => onAIAction("complete")}
             title="Complete code (Ctrl+Shift+L)"
           >

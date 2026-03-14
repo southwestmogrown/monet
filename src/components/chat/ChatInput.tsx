@@ -165,9 +165,16 @@ export function ChatInput({
           alignItems: "flex-end",
           gap: 8,
           background: "var(--bg-input)",
-          borderRadius: 8,
+          borderRadius: 10,
           border: "1px solid var(--border)",
-          padding: "8px 12px",
+          padding: "8px 10px",
+          transition: "border-color 0.12s",
+        }}
+        onFocusCapture={(e) => {
+          (e.currentTarget as HTMLElement).style.borderColor = "rgba(124,106,246,0.4)";
+        }}
+        onBlurCapture={(e) => {
+          (e.currentTarget as HTMLElement).style.borderColor = "var(--border)";
         }}
       >
         {/* Paperclip button */}
@@ -180,12 +187,15 @@ export function ChatInput({
             justifyContent: "center",
             width: 28,
             height: 28,
-            borderRadius: 5,
+            borderRadius: 6,
             background: "transparent",
             border: "none",
             cursor: "pointer",
             flexShrink: 0,
+            transition: "color 0.1s",
           }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "var(--accent)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = ""; }}
         >
           <Paperclip size={15} color="var(--text-muted)" />
         </button>
@@ -205,7 +215,7 @@ export function ChatInput({
             outline: "none",
             resize: "none",
             color: "var(--text-primary)",
-            fontSize: 13,
+            fontSize: 14,
             lineHeight: 1.5,
             fontFamily: "inherit",
             maxHeight: 200,
@@ -223,14 +233,14 @@ export function ChatInput({
               justifyContent: "center",
               width: 32,
               height: 32,
-              borderRadius: 6,
-              background: "#c0392b",
+              borderRadius: 8,
+              background: "var(--color-error, #F87171)",
               border: "none",
               cursor: "pointer",
               flexShrink: 0,
             }}
           >
-            <Square size={14} color="#fff" fill="#fff" />
+            <Square size={13} color="#fff" fill="#fff" />
           </button>
         ) : (
           <button
@@ -243,12 +253,15 @@ export function ChatInput({
               justifyContent: "center",
               width: 32,
               height: 32,
-              borderRadius: 6,
-              background: value.trim() ? "var(--accent)" : "var(--bg-active)",
+              borderRadius: 8,
+              background: value.trim()
+                ? "linear-gradient(135deg, #7C6AF6 0%, #9580FF 100%)"
+                : "var(--bg-active)",
               border: "none",
               cursor: value.trim() ? "pointer" : "not-allowed",
               flexShrink: 0,
-              transition: "background 0.1s",
+              transition: "opacity 0.1s",
+              opacity: value.trim() ? 1 : 0.5,
             }}
           >
             <Send size={14} color={value.trim() ? "#fff" : "var(--text-muted)"} />
@@ -280,17 +293,17 @@ export function ChatInput({
               justifyContent: "center",
               width: 26,
               height: 26,
-              borderRadius: 5,
-              background: thinkingEnabled ? "var(--accent)" : "transparent",
-              border: "none",
+              borderRadius: 6,
+              background: thinkingEnabled ? "var(--accent-dim)" : "transparent",
+              border: thinkingEnabled ? "1px solid rgba(124,106,246,0.3)" : "1px solid transparent",
               cursor: "pointer",
               flexShrink: 0,
-              transition: "background 0.1s",
+              transition: "all 0.12s",
             }}
           >
             <Lightbulb
               size={13}
-              color={thinkingEnabled ? "#fff" : "var(--text-muted)"}
+              color={thinkingEnabled ? "var(--accent)" : "var(--text-muted)"}
             />
           </button>
 
@@ -314,12 +327,12 @@ export function ChatInput({
             value={model}
             onChange={(e) => onModelChange(e.target.value as ModelId)}
             style={{
-              background: "transparent",
+              background: "var(--bg-input)",
               border: "1px solid var(--border)",
-              borderRadius: 4,
+              borderRadius: 6,
               color: "var(--text-secondary)",
               fontSize: 11,
-              padding: "2px 6px",
+              padding: "2px 8px",
               cursor: "pointer",
               outline: "none",
             }}
@@ -352,9 +365,9 @@ export function ChatInput({
       {sizeError && (
         <p
           style={{
-            margin: "4px 0 0",
-            fontSize: 11,
-            color: "#e74c3c",
+            margin: "6px 0 0",
+            fontSize: 12,
+            color: "var(--color-error, #F87171)",
           }}
         >
           Image too large (max 4 MB)
@@ -365,9 +378,9 @@ export function ChatInput({
       {sendError && (
         <p
           style={{
-            margin: "4px 0 0",
-            fontSize: 11,
-            color: "#e74c3c",
+            margin: "6px 0 0",
+            fontSize: 12,
+            color: "var(--color-error, #F87171)",
           }}
         >
           {sendError}

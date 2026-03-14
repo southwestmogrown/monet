@@ -21,7 +21,7 @@ export function ConversationSidebar({
   return (
     <div
       style={{
-        width: 220,
+        width: 228,
         background: "var(--bg-sidebar)",
         borderRight: "1px solid var(--border)",
         display: "flex",
@@ -36,17 +36,17 @@ export function ConversationSidebar({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "10px 12px",
+          padding: "12px 14px",
           borderBottom: "1px solid var(--border)",
         }}
       >
         <span
           style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: "var(--text-secondary)",
+            fontSize: 10,
+            fontWeight: 700,
+            color: "var(--text-muted)",
             textTransform: "uppercase",
-            letterSpacing: "0.08em",
+            letterSpacing: "0.1em",
           }}
         >
           Conversations
@@ -58,20 +58,23 @@ export function ConversationSidebar({
             background: "none",
             border: "none",
             cursor: "pointer",
-            color: "var(--text-secondary)",
+            color: "var(--text-muted)",
             display: "flex",
             alignItems: "center",
-            padding: 2,
-            borderRadius: 3,
+            padding: "3px 3px",
+            borderRadius: 5,
+            transition: "color 0.1s, background 0.1s",
           }}
-          onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLElement).style.color = "var(--text-primary)")
-          }
-          onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLElement).style.color = "var(--text-secondary)")
-          }
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.color = "var(--accent)";
+            (e.currentTarget as HTMLElement).style.background = "var(--accent-glow)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.color = "var(--text-muted)";
+            (e.currentTarget as HTMLElement).style.background = "transparent";
+          }}
         >
-          <Plus size={16} />
+          <Plus size={15} />
         </button>
       </div>
 
@@ -80,15 +83,21 @@ export function ConversationSidebar({
         {conversations.length === 0 ? (
           <div
             style={{
-              padding: "20px 16px",
+              padding: "24px 16px",
               color: "var(--text-muted)",
               fontSize: 12,
               textAlign: "center",
+              lineHeight: 1.7,
             }}
           >
             No conversations yet.
             <br />
-            Click + to start one.
+            <span
+              style={{ color: "var(--accent)", cursor: "pointer", fontSize: 12 }}
+              onClick={onCreate}
+            >
+              Start one →
+            </span>
           </div>
         ) : (
           conversations.map((conv) => (
@@ -124,27 +133,30 @@ function ConvItem({
         display: "flex",
         alignItems: "center",
         gap: 8,
-        padding: "7px 12px",
+        padding: "8px 14px",
         cursor: "pointer",
-        background: isActive ? "var(--bg-selected)" : "transparent",
+        background: isActive ? "var(--accent-glow)" : "transparent",
         borderLeft: isActive ? "2px solid var(--accent)" : "2px solid transparent",
         color: isActive ? "var(--text-active)" : "var(--text-secondary)",
         position: "relative",
+        transition: "background 0.1s",
       }}
       onMouseEnter={(e) => {
-        if (!isActive)
+        if (!isActive) {
           (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
-        (e.currentTarget.querySelector(".del-btn") as HTMLElement | null)?.style &&
-          ((e.currentTarget.querySelector(".del-btn") as HTMLElement).style.opacity = "1");
+        }
+        const btn = e.currentTarget.querySelector(".del-btn") as HTMLElement | null;
+        if (btn) btn.style.opacity = "1";
       }}
       onMouseLeave={(e) => {
-        if (!isActive)
+        if (!isActive) {
           (e.currentTarget as HTMLElement).style.background = "transparent";
-        (e.currentTarget.querySelector(".del-btn") as HTMLElement | null)?.style &&
-          ((e.currentTarget.querySelector(".del-btn") as HTMLElement).style.opacity = "0");
+        }
+        const btn = e.currentTarget.querySelector(".del-btn") as HTMLElement | null;
+        if (btn) btn.style.opacity = "0";
       }}
     >
-      <MessageSquare size={13} style={{ flexShrink: 0 }} />
+      <MessageSquare size={12} style={{ flexShrink: 0, opacity: isActive ? 1 : 0.6 }} />
       <span
         style={{
           flex: 1,
@@ -152,6 +164,7 @@ function ConvItem({
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
           fontSize: 12,
+          fontWeight: isActive ? 500 : 400,
         }}
       >
         {conversation.title}
@@ -170,14 +183,20 @@ function ConvItem({
           color: "var(--text-muted)",
           display: "flex",
           alignItems: "center",
-          padding: 2,
-          borderRadius: 3,
+          padding: "2px 2px",
+          borderRadius: 4,
           opacity: 0,
-          transition: "opacity 0.1s",
+          transition: "opacity 0.1s, color 0.1s",
           flexShrink: 0,
         }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.color = "var(--color-error, #F87171)";
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.color = "var(--text-muted)";
+        }}
       >
-        <Trash2 size={12} />
+        <Trash2 size={11} />
       </button>
     </div>
   );

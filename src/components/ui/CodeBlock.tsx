@@ -22,55 +22,74 @@ export function CodeBlock({ code, language, className }: CodeBlockProps) {
     <div
       style={{
         position: "relative",
-        background: "#1a1a1a",
-        borderRadius: 6,
+        background: "#0A0D1A",
+        borderRadius: 8,
         border: "1px solid var(--border)",
         overflow: "hidden",
-        marginBottom: 8,
+        marginBottom: 10,
       }}
     >
-      {language && (
-        <div
+      {/* Header bar */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "6px 14px",
+          background: "#0D1120",
+          borderBottom: "1px solid var(--border)",
+        }}
+      >
+        <span
+          style={{
+            fontSize: 11,
+            color: "var(--text-muted)",
+            fontFamily: "var(--font-mono), 'Cascadia Code', Consolas, monospace",
+            letterSpacing: "0.02em",
+          }}
+        >
+          {language ?? "code"}
+        </span>
+        <button
+          onClick={handleCopy}
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
-            padding: "4px 12px",
-            background: "#2a2a2a",
-            borderBottom: "1px solid var(--border)",
+            gap: 4,
+            background: copied ? "rgba(52,211,153,0.1)" : "transparent",
+            border: copied ? "1px solid rgba(52,211,153,0.2)" : "1px solid transparent",
+            borderRadius: 5,
+            cursor: "pointer",
+            color: copied ? "var(--color-success, #34D399)" : "var(--text-muted)",
+            fontSize: 11,
+            padding: "2px 7px",
+            transition: "all 0.12s",
+          }}
+          onMouseEnter={(e) => {
+            if (!copied) {
+              (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)";
+              (e.currentTarget as HTMLElement).style.borderColor = "var(--border)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!copied) {
+              (e.currentTarget as HTMLElement).style.color = "var(--text-muted)";
+              (e.currentTarget as HTMLElement).style.borderColor = "transparent";
+            }
           }}
         >
-          <span style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "monospace" }}>
-            {language}
-          </span>
-          <button
-            onClick={handleCopy}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: copied ? "#4ec9b0" : "var(--text-secondary)",
-              fontSize: 11,
-              padding: "2px 4px",
-              borderRadius: 3,
-            }}
-          >
-            {copied ? <Check size={12} /> : <Copy size={12} />}
-            {copied ? "Copied" : "Copy"}
-          </button>
-        </div>
-      )}
+          {copied ? <Check size={11} /> : <Copy size={11} />}
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
       <pre
         className={className}
         style={{
           margin: 0,
-          padding: "12px 16px",
+          padding: "14px 16px",
           overflowX: "auto",
           fontSize: 13,
-          lineHeight: 1.5,
+          lineHeight: 1.6,
           fontFamily: "var(--font-mono), 'Cascadia Code', Consolas, monospace",
           color: "var(--text-primary)",
           background: "transparent",

@@ -54,10 +54,11 @@ export function SettingsPanel() {
     >
       <h1
         style={{
-          fontSize: 18,
-          fontWeight: 600,
-          marginBottom: 32,
-          color: "var(--text-primary)",
+          fontSize: 20,
+          fontWeight: 700,
+          marginBottom: 28,
+          color: "var(--text-active)",
+          letterSpacing: "-0.01em",
         }}
       >
         Settings
@@ -66,13 +67,14 @@ export function SettingsPanel() {
       {!store.anthropicKeyOverride && (
         <div
           style={{
-            background: "rgba(255,200,0,0.1)",
-            border: "1px solid rgba(255,200,0,0.3)",
-            borderRadius: 6,
+            background: "rgba(251,191,36,0.06)",
+            border: "1px solid rgba(251,191,36,0.2)",
+            borderRadius: 8,
             padding: "10px 14px",
             fontSize: 12,
             color: "var(--text-secondary)",
-            marginBottom: 24,
+            marginBottom: 28,
+            lineHeight: 1.6,
           }}
         >
           No in-browser API key set. The app will use the server&apos;s ANTHROPIC_API_KEY environment
@@ -286,13 +288,28 @@ function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }
         display: "flex",
         alignItems: "center",
         gap: 8,
-        marginBottom: 10,
-        paddingBottom: 8,
+        marginBottom: 12,
+        paddingBottom: 10,
         borderBottom: "1px solid var(--border)",
       }}
     >
-      <span style={{ color: "var(--accent)" }}>{icon}</span>
-      <span style={{ fontWeight: 600, fontSize: 13, color: "var(--text-primary)" }}>{title}</span>
+      <span
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 26,
+          height: 26,
+          borderRadius: 7,
+          background: "var(--accent-dim)",
+          border: "1px solid rgba(124,106,246,0.2)",
+          color: "var(--accent)",
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </span>
+      <span style={{ fontWeight: 600, fontSize: 14, color: "var(--text-primary)" }}>{title}</span>
     </div>
   );
 }
