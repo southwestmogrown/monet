@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getAnthropicClient } from "@/lib/anthropic";
 
 const RequestSchema = z.object({
-  code: z.string(),
+  code: z.string().min(1),
   language: z.string().default("plaintext"),
 });
 
