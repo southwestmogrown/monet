@@ -65,4 +65,58 @@ describe("POST /api/agent/run", () => {
     const finalEvent = events.find((e) => e.type === "final");
     expect(finalEvent).toBeDefined();
   });
+
+  it("passes X-Anthropic-Key to getAnthropicClient in development", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+
+    const mockCreate = vi.fn().mockResolvedValueOnce({
+      stop_reason: "end_turn",
+      content: [{ type: "text", text: "Done." }],
+    });
+    mockGetAnthropicClient.mockReturnValue({
+      messages: { create: mockCreate },
+    } as ReturnType<typeof getAnthropicClient>);
+
+    const req = new NextRequest("http://localhost/api/agent/run", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Anthropic-Key": "dev-key-123",
+      },
+      body: JSON.stringify({ goal: "Test" }),
+    });
+
+    await POST(req);
+
+    expect(mockGetAnthropicClient).toHaveBeenCalledWith("dev-key-123");
+
+    vi.unstubAllEnvs();
+  });
+
+  it("ignores X-Anthropic-Key header in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+
+    const mockCreate = vi.fn().mockResolvedValueOnce({
+      stop_reason: "end_turn",
+      content: [{ type: "text", text: "Done." }],
+    });
+    mockGetAnthropicClient.mockReturnValue({
+      messages: { create: mockCreate },
+    } as ReturnType<typeof getAnthropicClient>);
+
+    const req = new NextRequest("http://localhost/api/agent/run", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Anthropic-Key": "prod-key-should-be-ignored",
+      },
+      body: JSON.stringify({ goal: "Test" }),
+    });
+
+    await POST(req);
+
+    expect(mockGetAnthropicClient).toHaveBeenCalledWith(undefined);
+
+    vi.unstubAllEnvs();
+  });
 });

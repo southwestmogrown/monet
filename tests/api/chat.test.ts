@@ -118,4 +118,56 @@ describe("POST /api/chat", () => {
     expect(typeof json.error).toBe("string");
     expect(json.error.length).toBeGreaterThan(0);
   });
+
+  it("passes X-Anthropic-Key to getAnthropicClient in development", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+
+    const mockIterable = makeMockAsyncIterable([
+      {
+        type: "content_block_delta",
+        delta: { type: "text_delta", text: "Hello" },
+      },
+    ]);
+    mockStream.mockReturnValue(mockIterable);
+    mockGetAnthropicClient.mockReturnValue({
+      messages: { stream: mockStream },
+    } as ReturnType<typeof getAnthropicClient>);
+
+    const req = makeRequest(
+      { messages: [{ role: "user", content: "Hi" }] },
+      { "X-Anthropic-Key": "dev-key-123" }
+    );
+
+    await POST(req);
+
+    expect(mockGetAnthropicClient).toHaveBeenCalledWith("dev-key-123");
+
+    vi.unstubAllEnvs();
+  });
+
+  it("ignores X-Anthropic-Key header in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+
+    const mockIterable = makeMockAsyncIterable([
+      {
+        type: "content_block_delta",
+        delta: { type: "text_delta", text: "Hello" },
+      },
+    ]);
+    mockStream.mockReturnValue(mockIterable);
+    mockGetAnthropicClient.mockReturnValue({
+      messages: { stream: mockStream },
+    } as ReturnType<typeof getAnthropicClient>);
+
+    const req = makeRequest(
+      { messages: [{ role: "user", content: "Hi" }] },
+      { "X-Anthropic-Key": "prod-key-should-be-ignored" }
+    );
+
+    await POST(req);
+
+    expect(mockGetAnthropicClient).toHaveBeenCalledWith(undefined);
+
+    vi.unstubAllEnvs();
+  });
 });

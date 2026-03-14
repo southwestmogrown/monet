@@ -29,7 +29,10 @@ export async function POST(req: NextRequest) {
   }
 
   const { variants, variables } = parsed.data;
-  const customKey = req.headers.get("X-Anthropic-Key") ?? undefined;
+  const customKey =
+    process.env.NODE_ENV === "development"
+      ? (req.headers.get("X-Anthropic-Key") ?? undefined)
+      : undefined;
   const client = getAnthropicClient(customKey);
 
   const results = await Promise.allSettled(

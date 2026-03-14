@@ -33,7 +33,10 @@ export async function POST(req: NextRequest) {
   }
 
   const { goal, context, enabledTools, model } = parsed.data;
-  const customKey = req.headers.get("X-Anthropic-Key") ?? undefined;
+  const customKey =
+    process.env.NODE_ENV === "development"
+      ? (req.headers.get("X-Anthropic-Key") ?? undefined)
+      : undefined;
   const client = getAnthropicClient(customKey);
   resetVirtualFS();
 
