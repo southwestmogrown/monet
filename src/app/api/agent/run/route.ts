@@ -44,6 +44,9 @@ export async function POST(req: NextRequest) {
     ? AGENT_TOOLS.filter((t) => enabledTools.includes(t.name))
     : AGENT_TOOLS;
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60_000);
+
   const stream = createNdjsonStream(async (emit) => {
     const messages: Anthropic.MessageParam[] = [
       {
@@ -54,93 +57,106 @@ export async function POST(req: NextRequest) {
 
     let iterations = 0;
 
-    while (iterations < MAX_ITERATIONS) {
-      iterations++;
+    try {
+      while (iterations < MAX_ITERATIONS) {
+        iterations++;
 
-      const response = await client.messages.create({
-        model: model,
-        max_tokens: 4096,
-        system:
-          "You are an autonomous AI agent. Use the tools available to you to complete the user's goal. Be thorough but efficient. When you have completed the goal, provide a clear final summary.",
-        tools: activeTools.length > 0 ? activeTools : AGENT_TOOLS,
-        tool_choice: { type: "auto" },
-        messages: messages,
-      });
+        const response = await client.messages.create(
+          {
+            model: model,
+            max_tokens: 4096,
+            system:
+              "You are an autonomous AI agent. Use the tools available to you to complete the user's goal. Be thorough but efficient. When you have completed the goal, provide a clear final summary.",
+            tools: activeTools.length > 0 ? activeTools : AGENT_TOOLS,
+            tool_choice: { type: "auto" },
+            messages: messages,
+          },
+          { signal: controller.signal }
+        );
 
-      // Append assistant message
-      messages.push({ role: "assistant", content: response.content });
+        // Append assistant message
+        messages.push({ role: "assistant", content: response.content });
 
-      if (response.stop_reason === "end_turn") {
-        // Extract final text
-        const finalText = response.content
-          .filter((b): b is Anthropic.TextBlock => b.type === "text")
-          .map((b) => b.text)
-          .join("\n");
+        if (response.stop_reason === "end_turn") {
+          // Extract final text
+          const finalText = response.content
+            .filter((b): b is Anthropic.TextBlock => b.type === "text")
+            .map((b) => b.text)
+            .join("\n");
 
-        emit({ type: "final", message: finalText });
+          emit({ type: "final", message: finalText });
+          break;
+        }
+
+        if (response.stop_reason === "tool_use") {
+          const toolBlocks = response.content.filter(
+            (b) => b.type === "tool_use"
+          ) as {
+            type: "tool_use";
+            id: string;
+            name: string;
+            input: Record<string, unknown>;
+          }[];
+
+          const toolResults: {
+            type: "tool_result";
+            tool_use_id: string;
+            content: string;
+          }[] = [];
+
+          for (const toolBlock of toolBlocks) {
+            const stepId = toolBlock.id;
+            const toolName = toolBlock.name as AgentToolName;
+            const input = toolBlock.input;
+
+            emit({
+              type: "step",
+              stepId,
+              tool: toolName,
+              input,
+            });
+
+            const result = await executeToolCall(toolName, input, vfs);
+
+            emit({
+              type: "step_result",
+              stepId,
+              result,
+            });
+
+            toolResults.push({
+              type: "tool_result",
+              tool_use_id: stepId,
+              content: result,
+            });
+          }
+
+          messages.push({ role: "user", content: toolResults });
+          continue;
+        }
+
+        // Unexpected stop reason
+        emit({
+          type: "error",
+          error: `Unexpected stop reason: ${response.stop_reason}`,
+        });
         break;
       }
 
-      if (response.stop_reason === "tool_use") {
-        const toolBlocks = response.content.filter(
-          (b) => b.type === "tool_use"
-        ) as {
-          type: "tool_use";
-          id: string;
-          name: string;
-          input: Record<string, unknown>;
-        }[];
-
-        const toolResults: {
-          type: "tool_result";
-          tool_use_id: string;
-          content: string;
-        }[] = [];
-
-        for (const toolBlock of toolBlocks) {
-          const stepId = toolBlock.id;
-          const toolName = toolBlock.name as AgentToolName;
-          const input = toolBlock.input;
-
-          emit({
-            type: "step",
-            stepId,
-            tool: toolName,
-            input,
-          });
-
-          const result = await executeToolCall(toolName, input, vfs);
-
-          emit({
-            type: "step_result",
-            stepId,
-            result,
-          });
-
-          toolResults.push({
-            type: "tool_result",
-            tool_use_id: stepId,
-            content: result,
-          });
-        }
-
-        messages.push({ role: "user", content: toolResults });
-        continue;
+      if (iterations >= MAX_ITERATIONS) {
+        emit({
+          type: "error",
+          error: `Agent reached the maximum iteration limit (${MAX_ITERATIONS}).`,
+        });
       }
-
-      // Unexpected stop reason
-      emit({
-        type: "error",
-        error: `Unexpected stop reason: ${response.stop_reason}`,
-      });
-      break;
-    }
-
-    if (iterations >= MAX_ITERATIONS) {
-      emit({
-        type: "error",
-        error: `Agent reached the maximum iteration limit (${MAX_ITERATIONS}).`,
-      });
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        emit({ type: "error", error: "Request timed out after 60 seconds. Try breaking down the task into smaller steps or reducing tool usage." });
+      } else {
+        throw err;
+      }
+    } finally {
+      clearTimeout(timeoutId);
     }
   });
 

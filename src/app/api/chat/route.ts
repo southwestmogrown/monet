@@ -74,26 +74,36 @@ export async function POST(req: NextRequest) {
     content: buildMessageContent(m),
   }));
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60_000);
+
   if (thinking) {
     // Stream as NDJSON with separate thinking/text events
     const ndjsonStream = createNdjsonStream(async (emit) => {
-      const stream = client.messages.stream({
-        model: effectiveModel,
-        max_tokens: Math.max(thinkingBudget + 1000, 16000),
-        thinking: { type: "enabled", budget_tokens: thinkingBudget } satisfies Anthropic.ThinkingConfigParam,
-        system: system ?? "You are Claude, a helpful AI assistant.",
-        messages: anthropicMessages,
-      });
+      try {
+        const stream = client.messages.stream(
+          {
+            model: effectiveModel,
+            max_tokens: Math.max(thinkingBudget + 1000, 16000),
+            thinking: { type: "enabled", budget_tokens: thinkingBudget } satisfies Anthropic.ThinkingConfigParam,
+            system: system ?? "You are Claude, a helpful AI assistant.",
+            messages: anthropicMessages,
+          },
+          { signal: controller.signal }
+        );
 
-      for await (const event of stream) {
-        if (event.type === "content_block_delta") {
-          const delta = event.delta;
-          if (delta.type === "thinking_delta") {
-            emit({ t: "k", d: delta.thinking ?? "" });
-          } else if (delta.type === "text_delta") {
-            emit({ t: "x", d: delta.text ?? "" });
+        for await (const event of stream) {
+          if (event.type === "content_block_delta") {
+            const delta = event.delta;
+            if (delta.type === "thinking_delta") {
+              emit({ t: "k", d: delta.thinking ?? "" });
+            } else if (delta.type === "text_delta") {
+              emit({ t: "x", d: delta.text ?? "" });
+            }
           }
         }
+      } finally {
+        clearTimeout(timeoutId);
       }
     });
 
@@ -109,20 +119,27 @@ export async function POST(req: NextRequest) {
 
   // Standard text stream
   async function* streamTokens(): AsyncIterable<string> {
-    const stream = client.messages.stream({
-      model: effectiveModel,
-      max_tokens: 8096,
-      system: system ?? "You are Claude, a helpful AI assistant.",
-      messages: anthropicMessages,
-    });
+    try {
+      const stream = client.messages.stream(
+        {
+          model: effectiveModel,
+          max_tokens: 8096,
+          system: system ?? "You are Claude, a helpful AI assistant.",
+          messages: anthropicMessages,
+        },
+        { signal: controller.signal }
+      );
 
-    for await (const event of stream) {
-      if (
-        event.type === "content_block_delta" &&
-        event.delta.type === "text_delta"
-      ) {
-        yield event.delta.text;
+      for await (const event of stream) {
+        if (
+          event.type === "content_block_delta" &&
+          event.delta.type === "text_delta"
+        ) {
+          yield event.delta.text;
+        }
       }
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
