@@ -198,3 +198,21 @@ Full codebase security and quality review conducted post-CI green. Six issues id
 - `resetVirtualFS()` is no longer exported
 - `npm run build` passes (verified ✓)
 - All 43 tests pass (verified ✓)
+
+---
+
+## [H-5] Add streaming request timeout / abort signal — 2026-03-14
+
+### Problem
+`client.messages.stream()` was called with no timeout or abort signal (and `client.messages.create()` in the agent route similarly). A stalled or very slow Anthropic API response would hold the server connection open indefinitely, consuming a Node.js worker.
+
+### Changes Made
+- **`src/app/api/chat/route.ts`**: Added `catch` blocks for `AbortError` in both the text-stream path (yields `"\n\n[Request timed out after 60 seconds.]"` so the client sees a readable error) and the thinking/NDJSON path (emits `{ t: "e", d: "Request timed out after 60 seconds." }` event). The `AbortController`, `setTimeout`, `signal` passing, and `clearTimeout` in `finally` were already in place.
+- **`tests/api/chat.test.ts`**: Added 3 new tests using `vi.useFakeTimers()`: text stream abort emits error text, thinking stream abort emits NDJSON `{t:"e"}` event, normal requests complete without timeout.
+- **`tests/api/agent.test.ts`**: Added 2 new tests: hanging agent create() triggers error NDJSON event, normal requests complete without timeout.
+
+### Acceptance Criteria Met
+- A mocked Anthropic call that never resolves causes the route to close the stream after ~60s (verified ✓)
+- Normal requests complete before the timeout and do not trigger the abort (verified ✓)
+- `npm run build` passes (verified ✓)
+- All 48 tests pass (verified ✓)
