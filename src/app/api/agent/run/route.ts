@@ -5,7 +5,7 @@ import { getAnthropicClient } from "@/lib/anthropic";
 import {
   AGENT_TOOLS,
   executeToolCall,
-  resetVirtualFS,
+  createVirtualFS,
 } from "@/lib/agent-tools";
 import { createNdjsonStream } from "@/lib/streaming";
 import type { AgentToolName } from "@/types/agent";
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       ? (req.headers.get("X-Anthropic-Key") ?? undefined)
       : undefined;
   const client = getAnthropicClient(customKey);
-  resetVirtualFS();
+  const vfs = createVirtualFS();
 
   const activeTools = enabledTools
     ? AGENT_TOOLS.filter((t) => enabledTools.includes(t.name))
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
             input,
           });
 
-          const result = await executeToolCall(toolName, input);
+          const result = await executeToolCall(toolName, input, vfs);
 
           emit({
             type: "step_result",
