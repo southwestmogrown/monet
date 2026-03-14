@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 
 // Must be declared before vi.mock so the hoisted factory can close over them.
@@ -35,6 +35,11 @@ function makeMockAsyncIterable(events: unknown[]) {
 describe("POST /api/chat", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("returns 200 with text/plain body for a standard chat message", async () => {
@@ -169,5 +174,100 @@ describe("POST /api/chat", () => {
     expect(mockGetAnthropicClient).toHaveBeenCalledWith(undefined);
 
     vi.unstubAllEnvs();
+  });
+
+  it("text stream emits an error message when the request times out", async () => {
+    // Stream that hangs forever (never yields)
+    const hangingIterable = {
+      [Symbol.asyncIterator]: async function* () {
+        await new Promise<void>((_, reject) => {
+          // Resolve when the AbortSignal fires
+          const onAbort = () => {
+            const err = new Error("AbortError");
+            err.name = "AbortError";
+            reject(err);
+          };
+          // The signal is injected via the options passed to stream(); simulate
+          // the SDK honouring it by listening on the AbortSignal that the route
+          // passes through mockStream's second argument.
+          mockStream.mock.calls[0]?.[1]?.signal?.addEventListener("abort", onAbort);
+        });
+      },
+    };
+    mockStream.mockReturnValue(hangingIterable);
+    mockGetAnthropicClient.mockReturnValue({
+      messages: { stream: mockStream },
+    } as ReturnType<typeof getAnthropicClient>);
+
+    const req = makeRequest({ messages: [{ role: "user", content: "Hi" }] });
+    const responsePromise = POST(req);
+
+    // Advance fake timers past the 60-second threshold
+    await vi.advanceTimersByTimeAsync(61_000);
+
+    const response = await responsePromise;
+    expect(response.status).toBe(200);
+
+    const body = await response.text();
+    expect(body).toContain("timed out");
+  });
+
+  it("thinking stream emits an NDJSON error event when the request times out", async () => {
+    const hangingIterable = {
+      [Symbol.asyncIterator]: async function* () {
+        await new Promise<void>((_, reject) => {
+          const onAbort = () => {
+            const err = new Error("AbortError");
+            err.name = "AbortError";
+            reject(err);
+          };
+          mockStream.mock.calls[0]?.[1]?.signal?.addEventListener("abort", onAbort);
+        });
+      },
+    };
+    mockStream.mockReturnValue(hangingIterable);
+    mockGetAnthropicClient.mockReturnValue({
+      messages: { stream: mockStream },
+    } as ReturnType<typeof getAnthropicClient>);
+
+    const req = makeRequest({
+      messages: [{ role: "user", content: "Think" }],
+      thinking: true,
+    });
+    const responsePromise = POST(req);
+
+    await vi.advanceTimersByTimeAsync(61_000);
+
+    const response = await responsePromise;
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toContain("application/x-ndjson");
+
+    const body = await response.text();
+    const lines = body.trim().split("\n").filter(Boolean);
+    const events = lines.map((l) => JSON.parse(l) as { t: string; d: string });
+    const errorEvent = events.find((e) => e.t === "e");
+    expect(errorEvent).toBeDefined();
+    expect(errorEvent?.d).toContain("timed out");
+  });
+
+  it("normal requests complete without triggering the timeout", async () => {
+    const mockIterable = makeMockAsyncIterable([
+      {
+        type: "content_block_delta",
+        delta: { type: "text_delta", text: "Fast response" },
+      },
+    ]);
+    mockStream.mockReturnValue(mockIterable);
+    mockGetAnthropicClient.mockReturnValue({
+      messages: { stream: mockStream },
+    } as ReturnType<typeof getAnthropicClient>);
+
+    const req = makeRequest({ messages: [{ role: "user", content: "Hi" }] });
+    const response = await POST(req);
+
+    expect(response.status).toBe(200);
+    const body = await response.text();
+    expect(body).toContain("Fast response");
+    expect(body).not.toContain("timed out");
   });
 });

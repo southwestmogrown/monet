@@ -102,6 +102,12 @@ export async function POST(req: NextRequest) {
             }
           }
         }
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") {
+          emit({ t: "e", d: "Request timed out after 60 seconds." });
+        } else {
+          throw err;
+        }
       } finally {
         clearTimeout(timeoutId);
       }
@@ -137,6 +143,12 @@ export async function POST(req: NextRequest) {
         ) {
           yield event.delta.text;
         }
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        yield "\n\n[Request timed out after 60 seconds.]";
+      } else {
+        throw err;
       }
     } finally {
       clearTimeout(timeoutId);
