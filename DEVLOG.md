@@ -180,3 +180,21 @@ Full codebase security and quality review conducted post-CI green. Six issues id
 
 ### Bugs / Problems
 - None discovered in existing feature functionality.
+
+---
+
+## [H-4] Isolate virtual filesystem by run ID — 2026-03-14
+
+### Problem
+`agent-tools.ts` originally used a module-level `Map` for the virtual filesystem shared across all concurrent requests to `/api/agent/run`. Two simultaneous agent runs would corrupt each other's file state.
+
+### Changes Made
+- **`src/lib/agent-tools.ts`**: Removed module-level `virtualFS` Map and `resetVirtualFS()` export. Added `createVirtualFS()` factory function that returns a fresh `VirtualFS` instance (with `read`, `write`, `list` methods) backed by a new `Map` each call. Updated `executeToolCall` to accept a `vfs: VirtualFS` parameter instead of accessing module-level state.
+- **`src/app/api/agent/run/route.ts`**: Calls `createVirtualFS()` once at the top of the POST handler and passes the instance to every `executeToolCall` invocation. Each HTTP request now gets its own isolated filesystem.
+- **`tests/api/agent-concurrency.test.ts`**: Added 6 isolation tests verifying that two `createVirtualFS()` instances never share state, including a concurrent-write scenario.
+
+### Acceptance Criteria Met
+- Two simultaneous agent runs each see their own isolated filesystem
+- `resetVirtualFS()` is no longer exported
+- `npm run build` passes (verified ✓)
+- All 43 tests pass (verified ✓)
