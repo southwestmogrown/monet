@@ -149,3 +149,34 @@
 - **Bug**: `npm run build` failed — Google Fonts (Geist) unreachable (TLS/network issue in build environment)
   **Fix**: Removed `next/font/google` imports from `layout.tsx`, switched to system font stack in `globals.css`
   **Status**: Resolved
+
+---
+
+## [Phase 8] Code Review — 2026-03-13
+
+### Review Summary
+Full codebase security and quality review conducted post-CI green. Six issues identified, none critical to current functionality but several are important before any production hardening.
+
+### Findings
+
+**Security**
+- `X-Anthropic-Key` header override is active in production; should be gated to `NODE_ENV === "development"` only.
+- `anthropicKeyOverride` persisted to `localStorage` — exposes the key to XSS. Warn users more prominently or use sessionStorage.
+
+**Correctness / Edge Cases**
+- `/api/code/complete` accepts an empty code string (`z.string()` with no `.min(1)`); all other code routes enforce `.min(1)`.
+- Agent tool inputs are cast to `Record<string, unknown>` and accessed with `as string` type assertions rather than being validated against a Zod schema.
+- Virtual filesystem (`virtualFS` Map in `agent-tools.ts`) is module-level global state; concurrent agent runs would corrupt each other's files.
+
+**Reliability**
+- `client.messages.stream()` is called with no timeout or abort signal; a stalled Anthropic API call will hang the server connection indefinitely.
+
+**Test Coverage**
+- Only 2 of 7 API routes have tests (`/api/chat`, `/api/agent/run`). Code, workbench, and virtual-FS concurrency are untested.
+
+### Decisions Made
+- Issues logged as Group H in `issues.md` for batch implementation.
+- Virtual FS concurrency fix (H-4) is the highest-risk item; scoped to `agent-tools.ts` only.
+
+### Bugs / Problems
+- None discovered in existing feature functionality.

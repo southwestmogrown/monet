@@ -638,3 +638,179 @@ are lost on page reload. This is acceptable for v1 but users frequently want to 
 - **G-1 and G-2 can be a single agent** — the CI workflow is trivial once tests exist.
 - **Recommended agent sizes**: A = ~3K output tokens, B = ~2K, C = ~1.5K, D = ~1K, E = ~2K,
   F = ~2K, G = ~3K.
+
+---
+
+## Group H — Security & Hardening
+
+*Run after Group G. Addresses findings from the Phase 8 code review. No intra-group file conflicts.*
+
+---
+
+### H-1 · Code completion accepts empty string
+
+**Priority:** Medium
+**Files touched:**
+- `src/app/api/code/complete/route.ts`
+
+**Context:**
+`/api/code/complete` validates `code` with `z.string()` and no `.min(1)` constraint. Every other
+code route (`/api/code/explain`, `/api/code/refactor`) uses `z.string().min(1)`. An empty string
+will reach the Claude API and waste tokens or produce nonsensical output.
+
+**Requirements:**
+- Change the `code` field in the Zod schema from `z.string()` to `z.string().min(1)`.
+- Confirm the 400 response path is already handled by the existing Zod parse error handler (it
+  should be — no additional error handling needed).
+
+**Acceptance criteria:**
+- [ ] `POST /api/code/complete` with `{ code: "" }` returns 400
+- [ ] `POST /api/code/complete` with `{ code: "const x = 1" }` still returns 200
+- [ ] `npm run build` passes
+
+---
+
+### H-2 · Restrict API key header override to development
+
+**Priority:** High
+**Files touched:**
+- `src/app/api/chat/route.ts`
+- `src/app/api/agent/run/route.ts`
+- `src/app/api/prompt-workbench/run/route.ts`
+- `src/app/api/prompt-workbench/compare/route.ts`
+- `src/lib/anthropic.ts`
+
+**Context:**
+All API routes read the `X-Anthropic-Key` request header and use it to override the server-side
+API key. In production, this allows any caller to supply an arbitrary Anthropic API key, which is
+a security risk (key enumeration, billing abuse). The override should only be accepted when
+`NODE_ENV === "development"`.
+
+**Requirements:**
+- In `src/lib/anthropic.ts` (or wherever `getAnthropicClient` is defined), gate the key override:
+  ```ts
+  const overrideKey = process.env.NODE_ENV === "development"
+    ? request.headers.get("X-Anthropic-Key")
+    : null;
+  ```
+- Apply the same gate in every route that reads `X-Anthropic-Key` directly (if not already
+  centralised in `getAnthropicClient`).
+- In production, if `X-Anthropic-Key` is present but `NODE_ENV !== "development"`, silently ignore
+  it (do not return an error — just use the server env key).
+
+**Acceptance criteria:**
+- [ ] With `NODE_ENV=production`, the `X-Anthropic-Key` header is ignored
+- [ ] With `NODE_ENV=development`, the override still works (existing tests pass)
+- [ ] `npm run build` passes
+
+---
+
+### H-3 · Validate agent tool inputs with Zod
+
+**Priority:** Medium
+**Files touched:**
+- `src/lib/agent-tools.ts`
+
+**Context:**
+Tool input blocks from the Anthropic API are cast to `Record<string, unknown>` and then accessed
+via `as string` type assertions (e.g. `(input as Record<string, unknown>).path as string`). If the
+model produces malformed inputs, these casts will produce `undefined` values that bubble up as
+runtime errors with unhelpful messages.
+
+**Requirements:**
+- For each tool handler in `agent-tools.ts`, define a Zod schema matching the tool's `input_schema`
+  and parse the raw input block through it before use.
+- On parse failure, return a structured error string as the tool result (e.g.
+  `"Tool input validation failed: <ZodError.message>"`) rather than throwing.
+- Remove all `as string` casts that are replaced by Zod-validated types.
+
+**Acceptance criteria:**
+- [ ] Passing a tool block with a missing required field (e.g. no `path` for `read_file`) returns a
+  validation error string as the tool result instead of crashing
+- [ ] `npm run type-check` exits 0 with no `as string` casts on tool inputs
+- [ ] `npm run build` passes
+
+---
+
+### H-4 · Isolate virtual filesystem by run ID
+
+**Priority:** High
+**Files touched:**
+- `src/lib/agent-tools.ts`
+- `src/app/api/agent/run/route.ts`
+
+**Context:**
+`virtualFS` is a module-level `Map` shared across all concurrent requests to `/api/agent/run`.
+If two agent runs execute simultaneously, their file writes will collide. This is the highest-risk
+finding from the code review.
+
+**Requirements:**
+- Remove the module-level `virtualFS` Map and `resetVirtualFS()` export.
+- Add a `createVirtualFS()` factory that returns a fresh `Map` and all tool handlers bound to it.
+- Update `executeTool` (or equivalent) to accept the per-run FS instance as a parameter.
+- In `/api/agent/run/route.ts`, call `createVirtualFS()` once at the top of the request handler
+  and pass the instance through to all `executeTool` calls.
+
+**Acceptance criteria:**
+- [ ] Two simultaneous agent runs each see their own isolated filesystem (verifiable by writing
+  `file-a` in run 1 and confirming run 2's `list_files` does not show it)
+- [ ] `resetVirtualFS()` is no longer exported (removing it is a breaking change guard)
+- [ ] `npm run build` passes
+
+---
+
+### H-5 · Add streaming request timeout / abort signal
+
+**Priority:** Medium
+**Files touched:**
+- `src/app/api/chat/route.ts`
+- `src/app/api/agent/run/route.ts`
+
+**Context:**
+`client.messages.stream()` is called with no timeout or abort signal. A stalled or very slow
+Anthropic API response will hold the server connection open indefinitely, consuming a Node.js
+worker and potentially causing the server to become unresponsive under load.
+
+**Requirements:**
+- Create an `AbortController` with a 60-second timeout (`setTimeout(() => controller.abort(), 60_000)`)
+  at the top of each streaming request handler.
+- Pass `signal: controller.signal` to the `client.messages.stream()` call.
+- On abort, write a final NDJSON error event (for the agent route) or close the stream with an
+  error message (for the chat route).
+- Clear the timeout in the stream's `finally` / completion handler so it does not fire after a
+  successful response.
+
+**Acceptance criteria:**
+- [ ] A mocked Anthropic call that never resolves causes the route to close the stream after ~60s
+- [ ] Normal requests complete before the timeout and do not trigger the abort
+- [ ] `npm run build` passes
+
+---
+
+### H-6 · Expand test coverage to all API routes
+
+**Priority:** Medium
+**Files touched:**
+- `tests/api/code.test.ts` (new)
+- `tests/api/workbench.test.ts` (new)
+- `tests/api/agent-concurrency.test.ts` (new)
+
+**Context:**
+Only `/api/chat` and `/api/agent/run` have smoke tests (G-1). The code routes, workbench routes,
+and the virtual-FS concurrency fix (H-4) have no test coverage.
+
+**Requirements:**
+- `tests/api/code.test.ts`: smoke tests for `/api/code/explain`, `/api/code/refactor`,
+  `/api/code/complete` with mocked SDK. Assert 200 on valid input; 400 on empty `code` string
+  (validates H-1).
+- `tests/api/workbench.test.ts`: smoke tests for `/api/prompt-workbench/run` and
+  `/api/prompt-workbench/compare`. Assert 200 with mocked SDK response.
+- `tests/api/agent-concurrency.test.ts`: simulate two concurrent calls to `createVirtualFS()`
+  (from H-4), write a file in each, and assert the file lists do not cross-contaminate.
+- All tests must use `vi.mock("@anthropic-ai/sdk")` — no real network calls.
+
+**Acceptance criteria:**
+- [ ] `npm test` exits 0 with all new tests passing
+- [ ] H-1 regression is caught by the empty-string test in `code.test.ts`
+- [ ] H-4 isolation is verified by the concurrency test
+- [ ] Total test suite runs in < 20 seconds
