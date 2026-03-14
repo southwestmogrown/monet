@@ -262,3 +262,23 @@ Following the `SKILL_ui-ux-designer.md` guidelines for an IDE category tool:
 - Empty states all have primary CTAs
 - Transitions capped at 120ms (per skill guidelines)
 - Color used semantically: violet = primary, red = destructive, green = success
+
+---
+
+## [Bug Fix] Monaco editor white flash on first render — 2026-03-14
+
+### Problem
+Navigating to `/editor` for the first time caused a blinding white flash before the dark theme loaded. Monaco was receiving `theme="claude-dark"` on mount, but the theme definition lived inside `onMount` — which fires *after* the editor renders. Monaco fell back to its default light theme for one frame.
+
+### Changes Made
+- **`src/components/editor/MonacoEditor.tsx`**: Moved `defineTheme("claude-dark")` from `onMount` into a new `beforeMount` handler (the `<Editor beforeMount={...}` prop). `beforeMount` fires synchronously before the editor DOM is created, so the theme is registered before Monaco renders a single pixel. Also removed the now-redundant `monacoAPI.editor.setTheme()` call and the `useMonacoAPI` hook (context menu actions now use the `monaco` arg passed directly to `onMount`).
+
+---
+
+## [Bug Fix] Invalid HTML nesting in chat markdown — 2026-03-14
+
+### Problem
+React logged console errors about invalid HTML nesting on the `/chat` route. ReactMarkdown wraps content in `<p>` tags, but the custom `code` renderer returns `<CodeBlock>` which renders a `<div>`. This produced `<p><div>...</div></p>` — a block element inside an inline element, which is invalid HTML.
+
+### Changes Made
+- **`src/components/chat/MessageBubble.tsx`**: Changed the ReactMarkdown `p` component override from rendering a `<p>` to a `<div>` with identical styling. This is the standard fix for ReactMarkdown + custom block-level renderers.

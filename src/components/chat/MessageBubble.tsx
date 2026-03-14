@@ -208,7 +208,7 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
               },
               p({ children }) {
                 return (
-                  <p style={{ margin: "0 0 10px 0" }}>{children}</p>
+                  <div style={{ margin: "0 0 10px 0" }}>{children}</div>
                 );
               },
               ul({ children }) {
