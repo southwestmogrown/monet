@@ -4,7 +4,7 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
-import { Brain, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { CodeBlock } from "@/components/ui/CodeBlock";
 import type { Message } from "@/types/chat";
 
@@ -14,10 +14,10 @@ function ThinkingBlock({ thinking }: { thinking: string }) {
   return (
     <div
       style={{
-        background: "rgba(0,0,0,0.2)",
-        border: "1px solid var(--border)",
-        borderRadius: 6,
-        marginBottom: 10,
+        background: "rgba(124,106,246,0.04)",
+        border: "1px solid rgba(124,106,246,0.15)",
+        borderRadius: 8,
+        marginBottom: 12,
         overflow: "hidden",
       }}
     >
@@ -26,43 +26,46 @@ function ThinkingBlock({ thinking }: { thinking: string }) {
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 6,
+          gap: 8,
           width: "100%",
-          padding: "6px 10px",
+          padding: "8px 12px",
           background: "none",
           border: "none",
           cursor: "pointer",
-          color: "var(--text-secondary)",
-          fontFamily: "monospace",
+          color: "var(--text-muted)",
           fontSize: 11,
+          fontFamily: "inherit",
         }}
       >
-        <Brain size={13} />
-        <span style={{ flex: 1, textAlign: "left" }}>Reasoning</span>
-        {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+        <Sparkles size={12} color="var(--accent)" style={{ opacity: 0.7 }} />
+        <span style={{ flex: 1, textAlign: "left", letterSpacing: "0.06em", textTransform: "uppercase", fontSize: 10 }}>
+          Reasoning
+        </span>
+        {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
       </button>
       <div
         style={{
           maxHeight: expanded ? 300 : 0,
           overflow: "hidden",
-          transition: "max-height 200ms ease",
+          transition: "max-height 120ms ease-out",
         }}
       >
         <div
           style={{
             overflowY: "auto",
             maxHeight: 300,
-            padding: "6px 10px 10px",
+            padding: "0 12px 12px",
           }}
         >
           <pre
             style={{
-              fontFamily: "monospace",
-              fontSize: 11,
-              color: "var(--text-secondary)",
+              fontFamily: "var(--font-mono), 'Cascadia Code', Consolas, monospace",
+              fontSize: 12,
+              color: "var(--text-muted)",
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
               margin: 0,
+              lineHeight: 1.6,
             }}
           >
             {thinking}
@@ -87,24 +90,27 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
         style={{
           display: "flex",
           justifyContent: "flex-end",
-          marginBottom: 12,
-          paddingLeft: 48,
+          marginBottom: 16,
+          paddingLeft: 64,
         }}
       >
         <div
           style={{
-            background: "var(--user-bubble)",
+            background: "linear-gradient(135deg, #1C2852 0%, #1A2448 100%)",
             color: "var(--text-primary)",
-            borderRadius: "12px 12px 2px 12px",
-            padding: "8px 14px",
-            maxWidth: "80%",
-            fontSize: 13,
+            borderRadius: "14px 14px 3px 14px",
+            padding: "10px 16px",
+            maxWidth: "78%",
+            fontSize: 14,
             lineHeight: 1.6,
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",
+            border: "1px solid rgba(124,106,246,0.2)",
+            boxShadow: "0 1px 8px rgba(0,0,0,0.2)",
           }}
         >
           {message.imageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={message.imageUrl}
               alt="attached image"
@@ -112,9 +118,9 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
                 maxWidth: 280,
                 maxHeight: 200,
                 objectFit: "contain",
-                borderRadius: 6,
+                borderRadius: 8,
                 display: "block",
-                marginBottom: 6,
+                marginBottom: 8,
               }}
             />
           )}
@@ -129,36 +135,33 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
       style={{
         display: "flex",
         justifyContent: "flex-start",
-        marginBottom: 16,
-        paddingRight: 48,
+        marginBottom: 20,
+        paddingRight: 64,
       }}
     >
       {/* Claude avatar */}
       <div
         style={{
-          width: 28,
-          height: 28,
-          borderRadius: "50%",
-          background: "var(--accent)",
+          width: 30,
+          height: 30,
+          borderRadius: 9,
+          background: "linear-gradient(135deg, #7C6AF6 0%, #A78BFA 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           flexShrink: 0,
-          marginRight: 10,
-          marginTop: 2,
-          fontSize: 11,
-          fontWeight: 700,
-          color: "#fff",
-          fontFamily: "monospace",
+          marginRight: 12,
+          marginTop: 1,
+          boxShadow: "0 0 10px rgba(124,106,246,0.25)",
         }}
       >
-        C
+        <Sparkles size={13} color="#fff" />
       </div>
 
       <div
         style={{
           flex: 1,
-          fontSize: 13,
+          fontSize: 14,
           lineHeight: 1.7,
           color: "var(--text-primary)",
         }}
@@ -190,11 +193,13 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
                   <code
                     {...props}
                     style={{
-                      background: "#2d2d2d",
-                      borderRadius: 3,
-                      padding: "1px 5px",
-                      fontSize: "0.9em",
-                      fontFamily: "monospace",
+                      background: "rgba(124,106,246,0.1)",
+                      border: "1px solid rgba(124,106,246,0.15)",
+                      borderRadius: 4,
+                      padding: "1px 6px",
+                      fontSize: "0.88em",
+                      fontFamily: "var(--font-mono), 'Cascadia Code', Consolas, monospace",
+                      color: "#A78BFA",
                     }}
                   >
                     {children}
@@ -203,19 +208,19 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
               },
               p({ children }) {
                 return (
-                  <p style={{ margin: "0 0 8px 0" }}>{children}</p>
+                  <p style={{ margin: "0 0 10px 0" }}>{children}</p>
                 );
               },
               ul({ children }) {
                 return (
-                  <ul style={{ margin: "4px 0 8px 0", paddingLeft: 20 }}>
+                  <ul style={{ margin: "4px 0 10px 0", paddingLeft: 20 }}>
                     {children}
                   </ul>
                 );
               },
               ol({ children }) {
                 return (
-                  <ol style={{ margin: "4px 0 8px 0", paddingLeft: 20 }}>
+                  <ol style={{ margin: "4px 0 10px 0", paddingLeft: 20 }}>
                     {children}
                   </ol>
                 );
@@ -225,14 +230,24 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
                   <blockquote
                     style={{
                       borderLeft: "3px solid var(--accent)",
-                      paddingLeft: 12,
-                      margin: "8px 0",
+                      paddingLeft: 14,
+                      margin: "10px 0",
                       color: "var(--text-secondary)",
+                      fontStyle: "italic",
                     }}
                   >
                     {children}
                   </blockquote>
                 );
+              },
+              h1({ children }) {
+                return <h1 style={{ fontSize: "1.4em", fontWeight: 700, margin: "16px 0 8px", color: "var(--text-active)" }}>{children}</h1>;
+              },
+              h2({ children }) {
+                return <h2 style={{ fontSize: "1.2em", fontWeight: 600, margin: "14px 0 6px", color: "var(--text-active)" }}>{children}</h2>;
+              },
+              h3({ children }) {
+                return <h3 style={{ fontSize: "1.05em", fontWeight: 600, margin: "12px 0 4px", color: "var(--text-primary)" }}>{children}</h3>;
               },
             }}
           >
@@ -242,11 +257,12 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
           <span
             style={{
               display: "inline-block",
-              width: 8,
-              height: 14,
+              width: 7,
+              height: 15,
               background: "var(--accent)",
               animation: "blink 1s step-end infinite",
               verticalAlign: "text-bottom",
+              borderRadius: 2,
             }}
           />
         ) : null}

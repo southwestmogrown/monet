@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { Sparkles } from "lucide-react";
 import { MessageBubble } from "./MessageBubble";
 import type { Message } from "@/types/chat";
 
@@ -25,32 +26,48 @@ export function MessageList({ messages, isStreaming }: MessageListProps) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          color: "var(--text-muted)",
-          gap: 8,
+          gap: 12,
+          padding: "0 24px",
         }}
       >
+        {/* Glow backdrop */}
         <div
           style={{
-            width: 48,
-            height: 48,
-            borderRadius: "50%",
-            background: "var(--accent)",
+            position: "relative",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 22,
-            fontWeight: 700,
-            color: "#fff",
-            fontFamily: "monospace",
-            marginBottom: 4,
+            marginBottom: 8,
           }}
         >
-          C
+          <div
+            style={{
+              position: "absolute",
+              width: 80,
+              height: 80,
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(124,106,246,0.2) 0%, transparent 70%)",
+            }}
+          />
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 16,
+              background: "linear-gradient(135deg, #7C6AF6 0%, #A78BFA 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 0 24px rgba(124,106,246,0.3)",
+            }}
+          >
+            <Sparkles size={22} color="#fff" />
+          </div>
         </div>
-        <p style={{ fontSize: 15, color: "var(--text-secondary)", margin: 0 }}>
+        <p style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.01em" }}>
           How can Claude help you today?
         </p>
-        <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
+        <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
           Start a conversation below
         </p>
       </div>
@@ -62,7 +79,7 @@ export function MessageList({ messages, isStreaming }: MessageListProps) {
       style={{
         flex: 1,
         overflowY: "auto",
-        padding: "16px 20px",
+        padding: "20px 24px",
         display: "flex",
         flexDirection: "column",
       }}

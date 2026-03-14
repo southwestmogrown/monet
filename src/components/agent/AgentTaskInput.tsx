@@ -50,7 +50,7 @@ export function AgentTaskInput({
   return (
     <div
       style={{
-        padding: "12px 16px",
+        padding: "14px 16px",
         borderBottom: "1px solid var(--border)",
         background: "var(--bg-sidebar)",
         flexShrink: 0,
@@ -58,11 +58,12 @@ export function AgentTaskInput({
     >
       <div
         style={{
-          fontSize: 11,
+          fontSize: 10,
           color: "var(--text-muted)",
-          marginBottom: 6,
+          marginBottom: 8,
           textTransform: "uppercase",
-          letterSpacing: "0.08em",
+          letterSpacing: "0.1em",
+          fontWeight: 700,
         }}
       >
         Agent Goal
@@ -78,10 +79,10 @@ export function AgentTaskInput({
           width: "100%",
           background: "var(--bg-input)",
           border: "1px solid var(--border)",
-          borderRadius: 6,
+          borderRadius: 8,
           color: isRunning ? "var(--text-muted)" : "var(--text-primary)",
-          fontSize: 13,
-          padding: "8px 12px",
+          fontSize: 14,
+          padding: "10px 12px",
           resize: "none",
           outline: "none",
           fontFamily: "inherit",
@@ -93,7 +94,7 @@ export function AgentTaskInput({
         style={{
           display: "flex",
           flexWrap: "wrap",
-          gap: 12,
+          gap: 10,
           marginTop: 8,
           fontSize: 11,
           color: "var(--text-muted)",
@@ -102,14 +103,15 @@ export function AgentTaskInput({
         {ALL_AGENT_TOOLS.map((tool) => (
           <label
             key={tool}
-            style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}
+            style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", userSelect: "none" }}
           >
             <input
               type="checkbox"
               checked={enabledTools.includes(tool)}
               onChange={() => toggleTool(tool)}
+              style={{ accentColor: "var(--accent)" }}
             />
-            {tool}
+            <span style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11 }}>{tool}</span>
           </label>
         ))}
       </div>
@@ -117,7 +119,7 @@ export function AgentTaskInput({
         style={{
           display: "flex",
           gap: 8,
-          marginTop: 8,
+          marginTop: 10,
           alignItems: "center",
         }}
       >
@@ -128,17 +130,17 @@ export function AgentTaskInput({
               display: "flex",
               alignItems: "center",
               gap: 6,
-              padding: "5px 12px",
-              background: "#c0392b",
-              border: "none",
-              borderRadius: 5,
+              padding: "6px 14px",
+              background: "rgba(248,113,113,0.1)",
+              border: "1px solid rgba(248,113,113,0.3)",
+              borderRadius: 7,
               cursor: "pointer",
-              color: "#fff",
+              color: "var(--color-error, #F87171)",
               fontSize: 12,
               fontFamily: "inherit",
             }}
           >
-            <Square size={12} fill="#fff" />
+            <Square size={11} fill="currentColor" />
             Stop
           </button>
         ) : (
@@ -149,18 +151,20 @@ export function AgentTaskInput({
               display: "flex",
               alignItems: "center",
               gap: 6,
-              padding: "5px 12px",
-              background: goal.trim() ? "var(--accent)" : "var(--bg-active)",
+              padding: "6px 14px",
+              background: goal.trim()
+                ? "linear-gradient(135deg, #7C6AF6 0%, #9580FF 100%)"
+                : "var(--bg-active)",
               border: "none",
-              borderRadius: 5,
+              borderRadius: 7,
               cursor: goal.trim() ? "pointer" : "not-allowed",
               color: goal.trim() ? "#fff" : "var(--text-muted)",
               fontSize: 12,
               fontFamily: "inherit",
-              transition: "background 0.1s",
+              opacity: goal.trim() ? 1 : 0.6,
             }}
           >
-            <Play size={12} />
+            <Play size={11} />
             Run Agent
           </button>
         )}
@@ -171,12 +175,12 @@ export function AgentTaskInput({
               display: "flex",
               alignItems: "center",
               gap: 6,
-              color: "var(--text-muted)",
+              color: "var(--accent)",
               fontSize: 11,
             }}
           >
-            <Spinner size={12} />
-            Agent running…
+            <Spinner size={11} />
+            Running…
           </div>
         )}
 
@@ -189,14 +193,23 @@ export function AgentTaskInput({
             display: "flex",
             alignItems: "center",
             gap: 4,
-            padding: "5px 8px",
+            padding: "5px 10px",
             background: "none",
             border: "1px solid var(--border)",
-            borderRadius: 5,
+            borderRadius: 6,
             cursor: "pointer",
             color: "var(--text-muted)",
             fontSize: 11,
             fontFamily: "inherit",
+            transition: "color 0.1s, border-color 0.1s",
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)";
+            (e.currentTarget as HTMLElement).style.borderColor = "var(--text-muted)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.color = "var(--text-muted)";
+            (e.currentTarget as HTMLElement).style.borderColor = "var(--border)";
           }}
         >
           <Trash2 size={11} />

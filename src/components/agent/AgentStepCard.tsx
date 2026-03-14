@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, CheckCircle, XCircle } from "lucide-react";
+import { ChevronDown, ChevronRight, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { AgentToolBadge } from "./AgentToolBadge";
-import { Spinner } from "@/components/ui/Spinner";
 import type { AgentStep } from "@/types/agent";
 
 interface AgentStepCardProps {
@@ -15,11 +14,18 @@ export function AgentStepCard({ step }: AgentStepCardProps) {
 
   const statusIcon =
     step.status === "running" ? (
-      <Spinner size={14} />
+      <Loader2
+        size={13}
+        color="var(--accent)"
+        style={{
+          animation: "spin 1s linear infinite",
+          flexShrink: 0,
+        }}
+      />
     ) : step.status === "done" ? (
-      <CheckCircle size={14} color="#4caf50" />
+      <CheckCircle2 size={13} color="var(--color-success, #34D399)" style={{ flexShrink: 0 }} />
     ) : step.status === "error" ? (
-      <XCircle size={14} color="#f44336" />
+      <XCircle size={13} color="var(--color-error, #F87171)" style={{ flexShrink: 0 }} />
     ) : null;
 
   const inputStr = JSON.stringify(step.input, null, 2);
@@ -28,10 +34,17 @@ export function AgentStepCard({ step }: AgentStepCardProps) {
     <div
       style={{
         border: "1px solid var(--border)",
-        borderRadius: 6,
+        borderRadius: 8,
         overflow: "hidden",
-        marginBottom: 8,
+        marginBottom: 6,
         background: "var(--bg-sidebar)",
+        transition: "border-color 0.12s",
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLElement).style.borderColor = "var(--accent-dim, rgba(124,106,246,0.25))";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.borderColor = "var(--border)";
       }}
     >
       {/* Header row */}
@@ -41,15 +54,9 @@ export function AgentStepCard({ step }: AgentStepCardProps) {
           display: "flex",
           alignItems: "center",
           gap: 8,
-          padding: "8px 12px",
+          padding: "9px 12px",
           cursor: "pointer",
         }}
-        onMouseEnter={(e) =>
-          ((e.currentTarget as HTMLElement).style.background = "var(--bg-hover)")
-        }
-        onMouseLeave={(e) =>
-          ((e.currentTarget as HTMLElement).style.background = "transparent")
-        }
       >
         {statusIcon}
         <AgentToolBadge tool={step.tool} />
@@ -61,15 +68,15 @@ export function AgentStepCard({ step }: AgentStepCardProps) {
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
-            fontFamily: "monospace",
+            fontFamily: "var(--font-mono), 'Cascadia Code', Consolas, monospace",
           }}
         >
           {Object.values(step.input)[0] as string}
         </span>
         {expanded ? (
-          <ChevronDown size={12} color="var(--text-muted)" />
+          <ChevronDown size={11} color="var(--text-muted)" />
         ) : (
-          <ChevronRight size={12} color="var(--text-muted)" />
+          <ChevronRight size={11} color="var(--text-muted)" />
         )}
       </div>
 
@@ -80,21 +87,23 @@ export function AgentStepCard({ step }: AgentStepCardProps) {
             borderTop: "1px solid var(--border)",
             padding: "10px 12px",
             fontSize: 12,
-            fontFamily: "monospace",
+            fontFamily: "var(--font-mono), 'Cascadia Code', Consolas, monospace",
           }}
         >
-          <div style={{ color: "var(--text-muted)", marginBottom: 4, fontFamily: "inherit" }}>
-            Input:
+          <div style={{ color: "var(--text-muted)", marginBottom: 6, fontFamily: "inherit", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            Input
           </div>
           <pre
             style={{
-              background: "#1a1a1a",
-              borderRadius: 4,
-              padding: "8px 10px",
+              background: "#070A14",
+              borderRadius: 6,
+              border: "1px solid var(--border)",
+              padding: "8px 12px",
               overflowX: "auto",
               color: "var(--text-secondary)",
               fontSize: 11,
               margin: "0 0 10px 0",
+              lineHeight: 1.5,
             }}
           >
             {inputStr}
@@ -103,23 +112,25 @@ export function AgentStepCard({ step }: AgentStepCardProps) {
           {step.result && (
             <>
               <div
-                style={{ color: "var(--text-muted)", marginBottom: 4, fontFamily: "inherit" }}
+                style={{ color: "var(--text-muted)", marginBottom: 6, fontFamily: "inherit", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}
               >
-                Result:
+                Result
               </div>
               <pre
                 style={{
-                  background: "#1a1a1a",
-                  borderRadius: 4,
-                  padding: "8px 10px",
+                  background: "#070A14",
+                  borderRadius: 6,
+                  border: "1px solid rgba(52,211,153,0.15)",
+                  padding: "8px 12px",
                   overflowX: "auto",
-                  color: "#aed581",
+                  color: "#6EE7B7",
                   fontSize: 11,
                   margin: 0,
                   whiteSpace: "pre-wrap",
                   wordBreak: "break-word",
                   maxHeight: 200,
                   overflow: "auto",
+                  lineHeight: 1.5,
                 }}
               >
                 {step.result}

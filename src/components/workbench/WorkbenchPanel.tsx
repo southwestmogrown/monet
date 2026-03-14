@@ -59,7 +59,7 @@ export function WorkbenchPanel() {
             justifyContent: "center",
             color: "var(--text-muted)",
             flexDirection: "column",
-            gap: 8,
+            gap: 10,
           }}
         >
           <p style={{ margin: 0, fontSize: 14, color: "var(--text-secondary)" }}>
@@ -71,10 +71,10 @@ export function WorkbenchPanel() {
               display: "flex",
               alignItems: "center",
               gap: 6,
-              padding: "6px 14px",
-              background: "var(--accent)",
+              padding: "7px 16px",
+              background: "linear-gradient(135deg, #7C6AF6 0%, #9580FF 100%)",
               border: "none",
-              borderRadius: 5,
+              borderRadius: 7,
               cursor: "pointer",
               color: "#fff",
               fontSize: 12,
@@ -111,12 +111,12 @@ export function WorkbenchPanel() {
                 key={m}
                 onClick={() => setMode(m)}
                 style={{
-                  padding: "3px 10px",
-                  background: mode === m ? "var(--accent)" : "none",
-                  border: `1px solid ${mode === m ? "var(--accent)" : "var(--border)"}`,
-                  borderRadius: 4,
+                  padding: "4px 12px",
+                  background: mode === m ? "var(--accent-dim)" : "none",
+                  border: `1px solid ${mode === m ? "rgba(124,106,246,0.3)" : "var(--border)"}`,
+                  borderRadius: 6,
                   cursor: "pointer",
-                  color: mode === m ? "#fff" : "var(--text-secondary)",
+                  color: mode === m ? "var(--accent)" : "var(--text-secondary)",
                   fontSize: 11,
                   fontFamily: "inherit",
                   textTransform: "capitalize",
@@ -133,18 +133,18 @@ export function WorkbenchPanel() {
                   value={activeModel}
                   onChange={(e) => setActiveModel(e.target.value as ModelId)}
                   style={{
-                    background: "transparent",
+                    background: "var(--bg-input)",
                     border: "1px solid var(--border)",
-                    borderRadius: 4,
+                    borderRadius: 5,
                     color: "var(--text-secondary)",
                     fontSize: 11,
-                    padding: "2px 6px",
+                    padding: "2px 8px",
                     cursor: "pointer",
                     outline: "none",
                   }}
                 >
                   {MODELS.map((m) => (
-                    <option key={m.id} value={m.id} style={{ background: "#333" }}>
+                    <option key={m.id} value={m.id} style={{ background: "#0E1422" }}>
                       {m.label}
                     </option>
                   ))}
@@ -158,14 +158,17 @@ export function WorkbenchPanel() {
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
-                    padding: "3px 10px",
-                    background: isRunning ? "var(--bg-active)" : "var(--accent)",
+                    padding: "4px 12px",
+                    background: isRunning
+                      ? "var(--bg-active)"
+                      : "linear-gradient(135deg, #7C6AF6 0%, #9580FF 100%)",
                     border: "none",
-                    borderRadius: 4,
+                    borderRadius: 6,
                     cursor: isRunning ? "not-allowed" : "pointer",
                     color: "#fff",
                     fontSize: 11,
                     fontFamily: "inherit",
+                    opacity: isRunning ? 0.7 : 1,
                   }}
                 >
                   {isRunning ? <Spinner size={11} color="#fff" /> : <Play size={11} />}

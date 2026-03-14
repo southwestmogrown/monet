@@ -216,3 +216,49 @@ Full codebase security and quality review conducted post-CI green. Six issues id
 - Normal requests complete before the timeout and do not trigger the abort (verified ✓)
 - `npm run build` passes (verified ✓)
 - All 48 tests pass (verified ✓)
+
+---
+
+## [UI/UX Upgrade] AI-native design overhaul — 2026-03-14
+
+### Problem
+The original UI was a near-identical clone of VS Code's dark theme — same gray backgrounds (`#1e1e1e`, `#252526`), same exact accent blue (`#007acc`), same generic "M" monogram logo and bright blue status bar. The app lacked any distinct identity despite being a purpose-built Claude IDE.
+
+### Design Decisions
+Following the `SKILL_ui-ux-designer.md` guidelines for an IDE category tool:
+
+- **Palette shift**: Moved from VS Code grays to a deep navy palette (`#0B0F1C` base, `#0E1422` sidebar). This is perceptually calmer over long sessions while being visually distinct.
+- **Accent**: Changed from VS Code blue `#007acc` → violet `#7C6AF6` / `#9580FF`. Violet is strongly associated with AI tooling and avoids any confusion with VS Code.
+- **Logo**: Replaced plain "M" monogram with a `Sparkles` icon in a rounded-square badge with gradient fill and ambient glow. The Sparkles icon communicates "AI-native" at a glance.
+- **Status bar**: Removed the VS Code-style solid blue bar. Replaced with a near-black bar with a subtle violet gradient accent stripe and a breadcrumb (`Monet › Chat`).
+- **Typography**: Body font updated from `13px system-ui` to `14px Inter/system` for better legibility in long sessions. Monospace font applied consistently to code elements.
+- **Empty states**: All four feature empty states now have icons with specific CTAs instead of plain text (following the skill's rule: "Empty states are onboarding opportunities").
+- **Buttons**: Primary actions use a violet gradient instead of flat accent color. Destructive actions (stop/delete) use soft red with muted background rather than harsh solid red.
+- **Borders**: Changed from opaque VS Code gray borders to dark blue `#1E2947`, giving more depth.
+- **Scrollbars**: Thinned to 6px with navy thumb color for a less intrusive feel.
+- **Code blocks**: Added consistent header bar with language label + copy button; always shown, not conditional.
+- **Agent step cards**: Replaced Spinner with Loader2 (spin CSS animation), updated status icons to use semantic colors from the palette, improved expand/collapse styling.
+
+### Files Changed
+- `src/app/globals.css` — Complete palette overhaul, new CSS variables, spin keyframe, improved scrollbars/selection
+- `src/components/shell/ActivityBar.tsx` — Sparkles logo, violet nav active states, gradient background
+- `src/components/shell/StatusBar.tsx` — Dark background, violet accent stripe, breadcrumb nav
+- `src/components/chat/MessageList.tsx` — Sparkles empty state with ambient glow
+- `src/components/chat/MessageBubble.tsx` — Better bubbles, Sparkles Claude avatar, improved inline code, heading renderers
+- `src/components/chat/ChatInput.tsx` — Rounded input, gradient send button, focus border ring
+- `src/components/chat/ConversationSidebar.tsx` — "Start one →" CTA, violet active state, red delete hover
+- `src/components/ui/CodeBlock.tsx` — Always-visible header, improved copy button style
+- `src/components/agent/AgentStepCard.tsx` — Better card hover, semantic status icons, improved result styling
+- `src/components/agent/AgentStepList.tsx` — Bot icon empty state, better final answer box
+- `src/components/agent/AgentTaskInput.tsx` — Gradient Run button, better typography, red stop button
+- `src/components/editor/EditorToolbar.tsx` — Violet Complete button, better button hover states
+- `src/components/workbench/TemplateLibrary.tsx` — "Create one →" CTA, consistent sidebar pattern
+- `src/components/workbench/WorkbenchPanel.tsx` — Gradient run button, mode tab improvements
+- `src/components/settings/SettingsPanel.tsx` — Icon-box section headers, bigger title
+
+### Acceptance Criteria Met
+- Zero functionality changes — all 48 tests pass (verified ✓)
+- Visually distinct from VS Code: deep navy palette + violet accent
+- Empty states all have primary CTAs
+- Transitions capped at 120ms (per skill guidelines)
+- Color used semantically: violet = primary, red = destructive, green = success

@@ -1,27 +1,41 @@
 @import "tailwindcss";
 
 :root {
-  --bg-editor: #1e1e1e;
-  --bg-sidebar: #252526;
-  --bg-activity-bar: #333333;
-  --bg-status-bar: #007acc;
-  --bg-panel: #1e1e1e;
-  --bg-input: #3c3c3c;
-  --bg-hover: #2a2d2e;
-  --bg-active: #37373d;
-  --bg-selected: #094771;
+  /* ── Deep navy base — AI-native, not VS Code ── */
+  --bg-editor: #0B0F1C;
+  --bg-sidebar: #0E1422;
+  --bg-activity-bar: #07091280;
+  --bg-status-bar: #060810;
+  --bg-panel: #0B0F1C;
+  --bg-input: #141B2E;
+  --bg-hover: #131929;
+  --bg-active: #192240;
+  --bg-selected: #1C2852;
 
-  --text-primary: #cccccc;
-  --text-secondary: #999999;
-  --text-muted: #6b6b6b;
-  --text-active: #ffffff;
+  /* ── Text ── */
+  --text-primary: #E2E8F5;
+  --text-secondary: #8B9DC3;
+  --text-muted: #4D5B7A;
+  --text-active: #F0F4FF;
 
-  --border: #3e3e42;
-  --accent: #007acc;
-  --accent-hover: #1a8ad4;
+  /* ── Borders ── */
+  --border: #1E2947;
+  --border-subtle: #141B2E;
 
-  --user-bubble: #094771;
-  --assistant-bubble: #252526;
+  /* ── Accent: violet — AI-forward, distinct from VS Code blue ── */
+  --accent: #7C6AF6;
+  --accent-hover: #9580FF;
+  --accent-dim: rgba(124, 106, 246, 0.15);
+  --accent-glow: rgba(124, 106, 246, 0.08);
+
+  /* ── Semantic ── */
+  --color-error: #F87171;
+  --color-warning: #FBBF24;
+  --color-success: #34D399;
+
+  /* ── Chat bubbles ── */
+  --user-bubble: #1C2852;
+  --assistant-bubble: #0E1422;
 }
 
 @theme inline {
@@ -51,14 +65,16 @@ body {
 body {
   background: var(--bg-editor);
   color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-size: 13px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -66,12 +82,18 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #424242;
-  border-radius: 4px;
+  background: #1E2947;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555555;
+  background: #2D3F66;
+}
+
+/* Text selection */
+::selection {
+  background: var(--accent-dim);
+  color: var(--text-active);
 }
 
 /* Cursor blink animation */
@@ -80,12 +102,19 @@ body {
   50% { opacity: 0; }
 }
 
+/* Spin animation for loading indicators */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Markdown body links */
 .markdown-body a {
   color: var(--accent);
   text-decoration: none;
 }
 .markdown-body a:hover {
+  color: var(--accent-hover);
   text-decoration: underline;
 }
 
@@ -93,15 +122,22 @@ body {
 .markdown-body table {
   border-collapse: collapse;
   margin: 8px 0;
-  font-size: 12px;
+  font-size: 13px;
+  width: 100%;
 }
 .markdown-body th,
 .markdown-body td {
   border: 1px solid var(--border);
-  padding: 4px 10px;
+  padding: 6px 12px;
+  text-align: left;
 }
 .markdown-body th {
   background: var(--bg-active);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 /* Activity bar nav tooltip */
@@ -112,32 +148,34 @@ body {
 .nav-tooltip::after {
   content: attr(data-tooltip);
   position: absolute;
-  left: calc(100% + 8px);
+  left: calc(100% + 10px);
   top: 50%;
   transform: translateY(-50%);
-  background: var(--bg-status-bar);
+  background: #1A2035;
   color: var(--text-active);
   font-size: 12px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  padding: 4px 8px;
-  border-radius: 4px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.1s;
   transition-delay: 0s;
   z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .nav-tooltip:hover::after {
   opacity: 1;
-  transition-delay: 500ms;
+  transition-delay: 400ms;
 }
 
 /* react-resizable-panels handle */
 [data-panel-resize-handle-id] {
   background: var(--border);
-  transition: background 0.15s;
+  transition: background 0.12s;
 }
 
 [data-panel-resize-handle-id]:hover,
