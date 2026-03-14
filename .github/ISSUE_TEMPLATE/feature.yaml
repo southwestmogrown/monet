@@ -1,48 +1,55 @@
-
----
 name: Feature
-about: New feature or enhancement
-labels: feat
----
+description: New feature or enhancement
+labels: ["feat"]
+body:
+  - type: textarea
+    id: what-and-why
+    attributes:
+      label: What & why
+      description: One to two sentences. What are you building, and why does it matter?
+    validations:
+      required: true
 
-## what & why
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What's explicitly IN scope for this issue?
+    validations:
+      required: true
 
-<!-- One to two sentences. What are you building, and why does it matter? -->
+  - type: textarea
+    id: non-goals
+    attributes:
+      label: Non-goals
+      description: What's explicitly OUT of scope? Prevents creep.
+    validations:
+      required: true
 
-## scope
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      description: How do you know this is complete? Be specific.
+    validations:
+      required: true
 
-<!-- What's explicitly IN scope for this issue? -->
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks
+      description: Break the work into checklist items, each completable in one sitting.
+      value: |
+        - [ ] 
+        - [ ] 
+        - [ ] 
+    validations:
+      required: true
 
--
-
-## non-goals
-
-<!-- What's explicitly OUT of scope? Prevents creep. -->
-
--
-
-## done when
-
-<!-- How do you know this is complete? Be specific. -->
-
-- [ ]
-- [ ]
-- [ ]
-
-## tasks
-
-<!-- Break the work into checklist items, each completable in one sitting -->
-
-- [ ]
-- [ ]
-- [ ]
-
-## notes / context
-
-<!-- Links, decisions, constraints, anything future-you needs to know -->
-
----
-
-**Branch:** `feat/{{ issue_number }}-short-slug`
-**Milestone:**
-**Related issues:**
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes / context
+      description: Links, decisions, constraints, anything future-you needs to know.
+    validations:
+      required: false
