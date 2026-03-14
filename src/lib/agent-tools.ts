@@ -1,4 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
+import { z } from "zod";
 import type { AgentToolName } from "@/types/agent";
 
 // ─── Tool Definitions (sent to Claude) ───────────────────────────────────────
@@ -103,6 +104,33 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
   },
 ];
 
+// ─── Tool Input Schemas (Zod) ─────────────────────────────────────────────────
+
+const WebSearchInput = z.object({
+  query: z.string(),
+});
+
+const ReadFileInput = z.object({
+  path: z.string(),
+});
+
+const WriteFileInput = z.object({
+  path: z.string(),
+  content: z.string(),
+});
+
+const CreateArtifactInput = z.object({
+  name: z.string(),
+  content: z.string(),
+  language: z.string().optional(),
+});
+
+const AnalyzeCodeInput = z.object({
+  code: z.string(),
+  language: z.string(),
+  focus: z.string().optional(),
+});
+
 // ─── Tool Handlers (server-side execution) ────────────────────────────────────
 
 type ToolInput = Record<string, unknown>;
@@ -141,7 +169,11 @@ export async function executeToolCall(
 ): Promise<string> {
   switch (toolName) {
     case "web_search": {
-      const query = input.query as string;
+      const parsed = WebSearchInput.safeParse(input);
+      if (!parsed.success) {
+        return `Tool input validation failed: ${parsed.error.message}`;
+      }
+      const { query } = parsed.data;
       // Use Brave Search API if available, otherwise return a stub
       const apiKey = process.env.BRAVE_SEARCH_API_KEY;
       if (!apiKey) {
@@ -173,7 +205,11 @@ export async function executeToolCall(
     }
 
     case "read_file": {
-      const path = input.path as string;
+      const parsed = ReadFileInput.safeParse(input);
+      if (!parsed.success) {
+        return `Tool input validation failed: ${parsed.error.message}`;
+      }
+      const { path } = parsed.data;
       const content = vfs.read(path);
       if (content === undefined) {
         return `Error: File not found: ${path}`;
@@ -182,16 +218,21 @@ export async function executeToolCall(
     }
 
     case "write_file": {
-      const path = input.path as string;
-      const content = input.content as string;
+      const parsed = WriteFileInput.safeParse(input);
+      if (!parsed.success) {
+        return `Tool input validation failed: ${parsed.error.message}`;
+      }
+      const { path, content } = parsed.data;
       vfs.write(path, content);
       return `Successfully wrote ${content.length} characters to ${path}`;
     }
 
     case "create_artifact": {
-      const name = input.name as string;
-      const content = input.content as string;
-      const language = (input.language as string) ?? "plaintext";
+      const parsed = CreateArtifactInput.safeParse(input);
+      if (!parsed.success) {
+        return `Tool input validation failed: ${parsed.error.message}`;
+      }
+      const { name, content, language = "plaintext" } = parsed.data;
       // Store as a virtual file under .artifacts/
       vfs.write(`.artifacts/${name}`, content);
       return `Artifact "${name}" (${language}) created with ${content.length} characters.`;
@@ -201,9 +242,11 @@ export async function executeToolCall(
       // This tool just returns the inputs — the Claude API route will
       // re-invoke Claude for the actual analysis using a focused prompt.
       // For now return a formatted summary so the agent loop can continue.
-      const code = input.code as string;
-      const language = (input.language as string) ?? "unknown";
-      const focus = (input.focus as string) ?? "all";
+      const parsed = AnalyzeCodeInput.safeParse(input);
+      if (!parsed.success) {
+        return `Tool input validation failed: ${parsed.error.message}`;
+      }
+      const { code, language, focus = "all" } = parsed.data;
       return `Code analysis requested for ${language} code (${code.split("\n").length} lines), focus: ${focus}. Analysis will be returned by Claude in the next turn.`;
     }
 
